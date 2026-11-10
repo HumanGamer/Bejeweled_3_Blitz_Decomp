@@ -1,0 +1,2 @@
+add_subdirectory(SexyAppFramework)
+add_subdirectory(Bejeweled3)

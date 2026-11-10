@@ -1,0 +1,2 @@
+#include "WinInetHTTPTransfer.h"
+
