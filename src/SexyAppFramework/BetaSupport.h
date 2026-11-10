@@ -19,14 +19,14 @@ namespace Sexy
         };
 
         SexyApp* mApp;
-        HFONT* mDialogFont;
-        HFONT* mItalicsFont;
-        HFONT* mBoldFont;
+        HFONT mDialogFont;
+        HFONT mItalicsFont;
+        HFONT mBoldFont;
         int mPeriodCount;
-        HWND* mHWnd;
-        HWND* mTextHWnd;
-        HWND* mNameHWnd;
-        HWND* mPasswordHWnd;
+        HWND mHWnd;
+        HWND mTextHWnd;
+        HWND mNameHWnd;
+        HWND mPasswordHWnd;
         WinInetHTTPTransfer mWinInetHTTPTransfer;
         bool mAborted;
         bool mDialogClosed;

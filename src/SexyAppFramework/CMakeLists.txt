@@ -22,8 +22,34 @@ target_sources(${PROJECT_NAME} PRIVATE
     ButtonListener.h
     DialogListener.cpp
     DialogListener.h
+    SEHCatcher.cpp
+    SEHCatcher.h
+    SharedImage.cpp
+    SharedImage.h
+    CritSect.cpp
+    CritSect.h
+    AutoCrit.h
+    Point.h
+    Rect.h
+    Ratio.cpp
+    Ratio.h
+    WidgetContainer.cpp
+    WidgetContainer.h
+    ImageFont.cpp
+    ImageFont.h
+    PIEffect.cpp
+    PIEffect.h
+    PopAnim.cpp
+    PopAnim.h
+    PopLoc.cpp
+    PopLoc.h
+    SharedRenderTarget.cpp
+    SharedRenderTarget.h
+    CfgMachine.h
 )
 
+target_link_libraries(${PROJECT_NAME} PUBLIC Sexy::ImageLib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING)
 
 add_library(Sexy::AppFramework ALIAS SexyAppFramework)

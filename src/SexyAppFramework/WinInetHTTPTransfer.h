@@ -36,7 +36,7 @@ namespace Sexy
         bool mExiting;
         bool mAborted;
         EResult mResult;
-        RTL_CRITICAL_SECTION mFileCritSection;
+        LPCRITICAL_SECTION mFileCritSection;
 
     public:
         WinInetHTTPTransfer();
