@@ -99,5 +99,19 @@ namespace Sexy
 {
     extern HINSTANCE gHInstance;
 
+    std::wstring		StringToWString(const std::string &theString);
+    std::string			WStringToString(const std::wstring &theString);
+    SexyString			StringToSexyString(const std::string& theString);
+    SexyString			WStringToSexyString(const std::wstring& theString);
+    std::string			SexyStringToString(const SexyString& theString);
+    std::wstring		SexyStringToWString(const SexyString& theString);
+    SexyString          ToSexyString(const std::string& theString);
+    SexyString          ToSexyString(const std::wstring& theString);
+
+    bool StringToInt(const std::string theString, int* theIntVal);
+    bool StringToDouble(const std::string theString, double* theDoubleVal);
+    bool StringToInt(const std::wstring theString, int* theIntVal);
+    bool StringToDouble(const std::wstring theString, double* theDoubleVal);
+
     std::string GetFileDir(const std::string& thePath, bool withSlash = false);
 }

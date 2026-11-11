@@ -2,6 +2,7 @@
 
 #include <ImageLib.h>
 #include "SEHCatcher.h"
+#include "PopLoc.h"
 
 using namespace Sexy;
 
@@ -79,6 +80,8 @@ void Sexy::SexyAppBase::Shutdown()
 
 std::string SexyAppBase::GetProductVersion(const std::string& thePath)
 {
+    // TODO: Copied from PopcapFramework 1.3, needs to be verified against decomp
+
     // Dynamically Load Version.dll
     typedef DWORD (APIENTRY *GetFileVersionInfoSizeFunc)(LPSTR lptstrFilename, LPDWORD lpdwHandle);
     typedef BOOL (APIENTRY *GetFileVersionInfoFunc)(LPSTR lptstrFilename, DWORD dwHandle, DWORD dwLen, LPVOID lpData);
@@ -141,4 +144,16 @@ void SexyAppBase::EnforceCursor()
 void SexyAppBase::SetMusicVolume(double theVolume)
 {
     // TODO: Implement
+}
+
+void SexyAppBase::SetString(const std::string& theId, const std::wstring& theValue)
+{
+    std::pair<StringWStringMap::iterator, bool> aPair = mStringProperties.insert(StringWStringMap::value_type(theId, theValue));
+    if (!aPair.second) // Found it, change value
+        aPair.first->second = theValue;
+
+    // numeric IDs also go into the localization table
+    int anId;
+    if (StringToInt(theId, &anId))
+        mPopLoc->SetString(anId, ToSexyString(theValue), false);
 }

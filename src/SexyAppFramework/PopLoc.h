@@ -9,12 +9,12 @@ namespace Sexy
     {
     public:
         IntWStringMap mIdStrings;
-        WStringWStringMap mNameStrings;
+        WStringWStringMap mNameStrings; // unused?
 
     public:
         PopLoc();
         ~PopLoc();
 
-        bool SetString(int id, const std::wstring& str, bool unknown);
+        bool SetString(int theId, const std::wstring& theString, bool theOverwrite);
     };
 }

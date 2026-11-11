@@ -352,6 +352,8 @@ namespace Sexy
         virtual void EnforceCursor();
 
         virtual void SetMusicVolume(double theVolume);
+
+        void SetString(const std::string& theId, const std::wstring& theValue);
     };
 
     extern SexyAppBase* gSexyAppBase;

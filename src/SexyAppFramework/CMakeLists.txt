@@ -46,6 +46,9 @@ target_sources(${PROJECT_NAME} PRIVATE
     SharedRenderTarget.cpp
     SharedRenderTarget.h
     CfgMachine.h
+    Debug.cpp
+    Debug.h
+    memmgr.h
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Sexy::ImageLib)

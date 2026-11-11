@@ -12,9 +12,13 @@ PopLoc::~PopLoc()
 
 }
 
-bool PopLoc::SetString(int theId, const std::wstring &theValue, bool unknown)
+bool PopLoc::SetString(int theId, const std::wstring &theString, bool theOverwrite)
 {
-    // TODO: Implement
+    std::pair<IntWStringMap::iterator, bool> aResult =
+        mIdStrings.insert(std::make_pair(theId, theString));
 
-    return false;
+    if (!aResult.second && theOverwrite) // folded away in the binary, but likely was this
+        aResult.first->second = theString;
+
+    return aResult.second;
 }
