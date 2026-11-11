@@ -80,6 +80,12 @@ namespace Sexy
         NUM_CURSORS,
     };
 
+    enum {
+        FPS_ShowFPS,
+        FPS_ShowCoords,
+        Num_FPS_Types
+    };
+
     typedef std::map<HANDLE, int> HandleToIntMap;
 
     class SexyAppBase : public ButtonListener, DialogListener
@@ -141,6 +147,7 @@ namespace Sexy
         HWND mInvisHWnd;
         bool mIsScreenSaver;
         bool mAllowMonitorPowersave;
+        bool mWantsDialogCompatibility;
         WindowsMessageList mDeferredMessages;
         bool mNoDefer;
         bool mFullScreenPageFlip;
@@ -170,7 +177,7 @@ namespace Sexy
         PIEffectSet mPIEffectSet;
         PopAnimSet mPopAnimSet;
         SharedImageMap mSharedImageMap;
-        void* mSharedImageEvent; // TODO: Figure out correct type
+        HANDLE mSharedImageEvent;
         bool mCleanupSharedImages;
 
         int mNonDrawCount;
@@ -345,6 +352,16 @@ namespace Sexy
         virtual void Init();
         virtual void Shutdown();
 
+        void ClearKeysDown();
+
+        virtual void BeginPopup();
+        virtual void EndPopup();
+        virtual int MsgBox(const std::string &theText, const std::string &theTitle = "Message", int theFlags = MB_OK);
+        virtual int MsgBox(const std::wstring &theText, const std::wstring &theTitle = L"Message", int theFlags = MB_OK);
+        virtual void Popup(const std::string& theString);
+        virtual void Popup(const std::wstring& theString);
+	    virtual void LogScreenSaverError(const std::string &theError);
+
         virtual std::string GetProductVersion(const std::string& thePath);
 
         virtual void SEHOccured();
@@ -354,6 +371,12 @@ namespace Sexy
         virtual void SetMusicVolume(double theVolume);
 
         void SetString(const std::string& theId, const std::wstring& theValue);
+
+        SexyString GetString(const std::string& theId);
+        SexyString GetString(const std::string& theId, const SexyString& theDefault);
+
+        void ClearUpdateBacklog(bool relaxForASecond = false);
+        bool IsScreenSaver();
     };
 
     extern SexyAppBase* gSexyAppBase;

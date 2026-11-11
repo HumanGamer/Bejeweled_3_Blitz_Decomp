@@ -7,7 +7,7 @@
 #undef WIN32_LEAN_AND_MEAN
 
 #define WIN32_LEAN_AND_MEAN
-#define _WIN32_WINNT 0x0500
+#define _WIN32_WINNT 0x0501
 #undef _UNICODE
 #undef UNICODE
 
@@ -98,6 +98,11 @@ typedef SexyString::value_type					SexyChar;
 namespace Sexy
 {
     extern HINSTANCE gHInstance;
+
+    extern std::string	vformat(const char* fmt, va_list argPtr);
+    extern std::wstring	vformat(const wchar_t* fmt, va_list argPtr);
+    extern std::string	StrFormat(const char* fmt ...);
+    extern std::wstring	StrFormat(const wchar_t* fmt ...);
 
     std::wstring		StringToWString(const std::string &theString);
     std::string			WStringToString(const std::wstring &theString);
