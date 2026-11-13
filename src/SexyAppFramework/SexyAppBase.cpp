@@ -1257,9 +1257,6 @@ void SexyAppBase::MakeWindow()
     mWidgetManager->MarkAllDirty();
 
     SetTimer(mHWnd, 100, mFrameTime, nullptr);
-
-
-    // TODO: Implement
 }
 
 void SexyAppBase::EnforceCursor()
