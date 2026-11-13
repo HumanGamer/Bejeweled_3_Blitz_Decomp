@@ -80,10 +80,47 @@ namespace Sexy
         NUM_CURSORS,
     };
 
+    enum
+    {
+        DEMO_MOUSE_POSITION,
+        DEMO_ACTIVATE_APP,
+        DEMO_SIZE,
+        DEMO_KEY_DOWN,
+        DEMO_KEY_UP,
+        DEMO_KEY_CHAR,
+        DEMO_CLOSE,
+        DEMO_MOUSE_ENTER,
+        DEMO_MOUSE_EXIT,
+        DEMO_LOADING_COMPLETE,
+        DEMO_REGISTRY_GETSUBKEYS,
+        DEMO_REGISTRY_READ,
+        DEMO_REGISTRY_WRITE,
+        DEMO_REGISTRY_ERASE,
+        DEMO_FILE_EXISTS,
+        DEMO_FILE_READ,
+        DEMO_FILE_WRITE,
+        DEMO_HTTP_RESULT,
+        DEMO_SYNC,
+        DEMO_ASSERT_STRING_EQUAL,
+        DEMO_ASSERT_INT_EQUAL,
+        DEMO_MOUSE_WHEEL,
+        DEMO_HANDLE_COMPLETE,
+        DEMO_VIDEO_DATA,
+        DEMO_IDLE = 31
+    };
+
     enum {
         FPS_ShowFPS,
         FPS_ShowCoords,
         Num_FPS_Types
+    };
+
+    enum
+    {
+        UPDATESTATE_MESSAGES,
+        UPDATESTATE_PROCESS_1,
+        UPDATESTATE_PROCESS_2,
+        UPDATESTATE_PROCESS_DONE
     };
 
     typedef std::map<HANDLE, int> HandleToIntMap;
@@ -348,9 +385,28 @@ namespace Sexy
     public:
         SexyAppBase();
         virtual ~SexyAppBase();
+
+        // Common overrides:
+	    virtual MusicInterface*	CreateMusicInterface(HWND theHWnd);
+        virtual void InitHook();
+        virtual void ReadFromRegistry();
+        virtual void PreDisplayHook();
+
+        virtual void HandleGameAlreadyRunning();
+
         virtual void Start();
         virtual void Init();
         virtual void Shutdown();
+
+        virtual void DoParseCmdLine();
+	    virtual void ParseCmdLine(const std::string& theCmdLine);
+
+        virtual bool ChangeDirHook(const char *theIntendedPath);
+
+        void RestoreScreenResolution();
+        void DoExit(int theCode);
+
+        void SetCursor(int theCursorNum);
 
         void ClearKeysDown();
 
@@ -366,17 +422,26 @@ namespace Sexy
 
         virtual void SEHOccured();
 
+        virtual void MakeWindow();
         virtual void EnforceCursor();
 
         virtual void SetMusicVolume(double theVolume);
+	    virtual void SetSfxVolume(double theVolume);
+
+        virtual void InitPropertiesHook();
 
         void SetString(const std::string& theId, const std::wstring& theValue);
 
         SexyString GetString(const std::string& theId);
         SexyString GetString(const std::string& theId, const SexyString& theDefault);
 
+        bool PrepareDemoCommand(bool required);
+	    bool ReadDemoBuffer(std::string &theError);//UNICODE
+
         void ClearUpdateBacklog(bool relaxForASecond = false);
         bool IsScreenSaver();
+
+	    static LRESULT CALLBACK	WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     };
 
     extern SexyAppBase* gSexyAppBase;

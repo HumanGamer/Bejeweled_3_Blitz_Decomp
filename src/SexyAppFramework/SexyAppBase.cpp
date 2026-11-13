@@ -1,14 +1,22 @@
 #include "SexyAppBase.h"
 
 #include <ImageLib.h>
+#include <PakInterface.h>
 #include <time.h>
+#include <shlobj.h>
+#include <direct.h>
 
+#include "BassMusicInterface.h"
 #include "CfgMachine.h"
 #include "DDInterface.h"
 #include "Debug.h"
+#include "DSoundManager.h"
+#include "FModMusicInterface.h"
+#include "MusicInterface.h"
 #include "SEHCatcher.h"
 #include "PopLoc.h"
 #include "ResourceManager.h"
+#include "SexyLocale.h"
 #include "WidgetManager.h"
 
 using namespace Sexy;
@@ -29,7 +37,53 @@ static bool gScreenSaverActive = false;
 #define SPI_GETSCREENSAVERRUNNING 114
 #endif
 
-Sexy::SexyAppBase::SexyAppBase()
+//HotSpot: 11 4
+//Size: 32 32
+unsigned char gFingerCursorData[] = {
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xe7, 0xff, 0xff, 0xff, 0xc3, 0xff, 0xff, 0xff, 0xc3, 0xff, 0xff, 0xff, 0xc3,
+	0xff, 0xff, 0xff, 0xc3, 0xff, 0xff, 0xff, 0xc0, 0xff, 0xff, 0xff, 0xc0, 0x1f, 0xff, 0xff,
+	0xc0, 0x07, 0xff, 0xff, 0xc0, 0x03, 0xff, 0xfc, 0x40, 0x01, 0xff, 0xfc, 0x00, 0x01, 0xff,
+	0xfc, 0x00, 0x01, 0xff, 0xfc, 0x00, 0x01, 0xff, 0xff, 0x00, 0x01, 0xff, 0xff, 0x00, 0x01,
+	0xff, 0xff, 0x80, 0x01, 0xff, 0xff, 0x80, 0x03, 0xff, 0xff, 0xc0, 0x03, 0xff, 0xff, 0xc0,
+	0x03, 0xff, 0xff, 0xe0, 0x07, 0xff, 0xff, 0xe0, 0x07, 0xff, 0xff, 0xe0, 0x07, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18,
+	0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00,
+	0x18, 0x00, 0x00, 0x00, 0x1b, 0x00, 0x00, 0x00, 0x1b, 0x60, 0x00, 0x00, 0x1b, 0x68, 0x00,
+	0x00, 0x1b, 0x6c, 0x00, 0x01, 0x9f, 0xec, 0x00, 0x01, 0xdf, 0xfc, 0x00, 0x00, 0xdf, 0xfc,
+	0x00, 0x00, 0x5f, 0xfc, 0x00, 0x00, 0x7f, 0xfc, 0x00, 0x00, 0x3f, 0xfc, 0x00, 0x00, 0x3f,
+	0xf8, 0x00, 0x00, 0x1f, 0xf8, 0x00, 0x00, 0x1f, 0xf8, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00,
+	0x0f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00
+};
+
+//HotSpot: 15 10
+//Size: 32 32
+unsigned char gDraggingCursorData[] = {
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xfe, 0x7f, 0xff, 0xff, 0xfc, 0x0f, 0xff, 0xff, 0xf0, 0x07, 0xff, 0xff, 0xe0,
+	0x01, 0xff, 0xff, 0xe0, 0x00, 0xff, 0xff, 0xe0, 0x00, 0xff, 0xff, 0xe0, 0x00, 0xff, 0xff,
+	0xe0, 0x00, 0xff, 0xfe, 0x60, 0x00, 0xff, 0xfc, 0x20, 0x00, 0xff, 0xfc, 0x00, 0x00, 0xff,
+	0xfe, 0x00, 0x00, 0xff, 0xfe, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x80, 0x00,
+	0xff, 0xff, 0x80, 0x01, 0xff, 0xff, 0xc0, 0x01, 0xff, 0xff, 0xe0, 0x01, 0xff, 0xff, 0xf0,
+	0x03, 0xff, 0xff, 0xf8, 0x03, 0xff, 0xff, 0xf8, 0x03, 0xff, 0xff, 0xf8, 0x03, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x80, 0x00, 0x00, 0x01, 0xb0, 0x00, 0x00, 0x0d, 0xb0, 0x00, 0x00, 0x0d, 0xb6, 0x00, 0x00,
+	0x0d, 0xb6, 0x00, 0x00, 0x0d, 0xb6, 0x00, 0x00, 0x0d, 0xb6, 0x00, 0x00, 0x0d, 0xb6, 0x00,
+	0x01, 0x8d, 0xb6, 0x00, 0x01, 0xcf, 0xfe, 0x00, 0x00, 0xef, 0xfe, 0x00, 0x00, 0xff, 0xfe,
+	0x00, 0x00, 0x7f, 0xfe, 0x00, 0x00, 0x3f, 0xfe, 0x00, 0x00, 0x3f, 0xfc, 0x00, 0x00, 0x1f,
+	0xfc, 0x00, 0x00, 0x0f, 0xfc, 0x00, 0x00, 0x07, 0xf8, 0x00, 0x00, 0x03, 0xf8, 0x00, 0x00,
+	0x03, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00
+};
+
+SexyAppBase::SexyAppBase()
 {
     gSexyAppBase = this;
 
@@ -280,24 +334,431 @@ Sexy::SexyAppBase::SexyAppBase()
     mWidgetInspectorClickPos.mY = -1;
 }
 
-Sexy::SexyAppBase::~SexyAppBase()
+SexyAppBase::~SexyAppBase()
 {
     // TODO: Implement
 }
 
-void Sexy::SexyAppBase::Init()
+typedef HRESULT (WINAPI *SHGetFolderPathFunc)(HWND, int, HANDLE, DWORD, LPTSTR);
+static SHGetFolderPathFunc GetSHGetFolderPath(const char* theDLL, HMODULE* theMod)
+{
+    HMODULE aMod = LoadLibrary(theDLL);
+    SHGetFolderPathFunc aFunc = nullptr;
+
+    if (aMod != nullptr)
+    {
+        *((void**)&aFunc) = (void*)GetProcAddress(aMod, "SHGetFolderPathA");
+        if (aFunc == nullptr)
+        {
+            FreeLibrary(aMod);
+            aMod = nullptr;
+        }
+    }
+
+    *theMod = aMod;
+    return aFunc;
+}
+
+static BOOL CALLBACK ChangeDisplayWindowEnumProc(HWND hwnd, LPARAM lParam)
+{
+    typedef std::map<HWND,RECT> WindowMap;
+    static WindowMap aMap;
+
+    if (lParam == 0 && aMap.find(hwnd) == aMap.end()) // record
+    {
+        RECT aRect;
+        if (!IsIconic(hwnd) && IsWindowVisible(hwnd))
+        {
+            if (GetWindowRect(hwnd, &aRect))
+            {
+                aMap[hwnd] = aRect;
+            }
+        }
+    }
+    else
+    {
+        WindowMap::iterator anItr = aMap.find(hwnd);
+        if (anItr != aMap.end())
+        {
+            RECT &r = anItr->second;
+            MoveWindow(hwnd, r.left, r.top, abs(r.right - r.left), abs(r.bottom - r.top), TRUE);
+        }
+    }
+    return TRUE;
+}
+
+void SexyAppBase::Init()
+{
+    mPrimaryThreadId = GetCurrentThreadId();
+
+    if (mShutdown)
+        return;
+
+    if (gDDrawDLL == nullptr || gDSoundDLL == nullptr)
+    {
+        MessageBox(nullptr,
+                   GetString("APP_REQUIRES_DIRECTX", _S("This application requires DirectX to run.  You can get DirectX at http://www.microsoft.com/directx")).c_str(),
+                   GetString("YOU_NEED_DIRECTX", _S("You need DirectX")).c_str(),
+                   MB_OK | MB_ICONERROR);
+
+        DoExit(0);
+    }
+
+    InitPropertiesHook();
+    ReadFromRegistry();
+
+    if (CheckForVista())
+    {
+        // TODO: GetSHGetFolderPath is deprecated and should be replaced.
+        HMODULE aMod;
+        SHGetFolderPathFunc aFunc = GetSHGetFolderPath("shell32.dll", &aMod);
+        if (aFunc == nullptr || aMod == nullptr)
+        {
+            // This was originally re-declared as a separate variable which is clearly a bug.
+            aFunc = GetSHGetFolderPath("shfolder.dll", &aMod);
+        }
+
+        if (aMod != nullptr)
+        {
+            char aPath[MAX_PATH];
+            aFunc(nullptr, CSIDL_COMMON_APPDATA, nullptr, SHGFP_TYPE_CURRENT, aPath);
+
+            std::string aDataPath = RemoveTrailingSlash(aPath) + "\\" + mFullCompanyName + "\\" + mProdName;
+            SetAppDataFolder(aDataPath + "\\");
+            //MkDir(aDataPath);
+            //AllowAllAccess(aDataPath);
+
+            if (mDemoFileName.length() < 2 || (mDemoFileName[1] != ':' && mDemoFileName[2] != '\\'))
+            {
+                mDemoFileName = GetAppDataFolder() + mDemoFileName;
+            }
+
+            FreeLibrary(aMod);
+        }
+    }
+
+    if (!mCmdLineParsed)
+        DoParseCmdLine();
+
+    if (IsScreenSaver())
+        mOnlyAllowOneCopyToRun = false;
+
+    if (gHInstance == nullptr)
+        gHInstance = GetModuleHandle(nullptr);
+
+    // Change directory
+    if (!ChangeDirHook(mChangeDirTo.c_str()))
+        _chdir(mChangeDirTo.c_str());
+
+    ImageLib::InitJPEG2000();
+
+    gPakInterface->AddPakFile("main.pak");
+
+    // Create a message we can use to talk to ourselves inter-process
+    mNotifyGameMessage = RegisterWindowMessage((_S("Notify") + StringToSexyString(mProdName)).c_str());
+
+    // Create a globally unique mutex
+    mMutex = CreateMutex(nullptr, TRUE, (StringToSexyString(mProdName) + _S("Mutex")).c_str());
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+        HandleGameAlreadyRunning();
+
+    mRandSeed = GetTickCount();
+    SRand(mRandSeed);
+
+    // Set up demo recording stuff
+    if (mPlayingDemoBuffer)
+    {
+        std::string anError;
+        if (!ReadDemoBuffer(anError))
+        {
+            mPlayingDemoBuffer = false;
+            Popup(anError);
+            DoExit(0);
+        }
+    }
+
+    srand(GetTickCount());
+
+    if (CheckFor98Mill())
+    {
+        mIsWideWindow = false;
+
+        WNDCLASSA wc;
+        wc.style = CS_DBLCLKS;
+        wc.cbClsExtra = 0;
+        wc.cbWndExtra = 0;
+        wc.hbrBackground = nullptr;
+        wc.hCursor = nullptr;
+        wc.hIcon = LoadIconA(gHInstance, "IDI_MAIN_ICON");
+        wc.hInstance = gHInstance;
+        wc.lpfnWndProc = WindowProc;
+        wc.lpszClassName = "MainWindow";
+        wc.lpszMenuName = nullptr;
+        bool success = RegisterClassA(&wc) != 0;
+        DBG_ASSERTE(success);
+        if (mInvisHWnd == nullptr)
+        {
+            wc.style = 0;
+            wc.cbClsExtra = 0;
+            wc.cbWndExtra = 0;
+            wc.hbrBackground = nullptr;
+            wc.hCursor = nullptr;
+            wc.hIcon = nullptr;
+            wc.hInstance = gHInstance;
+            wc.lpfnWndProc = WindowProc;
+            wc.lpszClassName = "InvisWindow";
+            wc.lpszMenuName = nullptr;
+            success = RegisterClassA(&wc) != 0;
+            DBG_ASSERTE(success);
+
+            mInvisHWnd = CreateWindowExA(
+                    0,
+                    "InvisWindow",
+                    SexyStringToStringFast(mTitle).c_str(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    nullptr,
+                    nullptr,
+                    gHInstance,
+                    0);
+            SetWindowLong(mInvisHWnd, GWL_USERDATA, (LONG) this);
+        }
+    }
+    else
+    {
+        mIsWideWindow = sizeof(SexyChar) == sizeof(wchar_t);
+
+        WNDCLASS wc;
+        wc.style = CS_DBLCLKS;
+        wc.cbClsExtra = 0;
+        wc.cbWndExtra = 0;
+        wc.hbrBackground = nullptr;
+        wc.hCursor = nullptr;
+        wc.hIcon = LoadIconA(gHInstance, "IDI_MAIN_ICON");
+        wc.hInstance = gHInstance;
+        wc.lpfnWndProc = WindowProc;
+        wc.lpszClassName = _S("MainWindow");
+        wc.lpszMenuName = nullptr;
+        bool success = RegisterClass(&wc) != 0;
+        DBG_ASSERTE(success);
+
+        if (mInvisHWnd == nullptr)
+        {
+            wc.style = 0;
+            wc.cbClsExtra = 0;
+            wc.cbWndExtra = 0;
+            wc.hbrBackground = nullptr;
+            wc.hCursor = nullptr;
+            wc.hIcon = nullptr;
+            wc.hInstance = gHInstance;
+            wc.lpfnWndProc = WindowProc;
+            wc.lpszClassName = _S("InvisWindow");
+            wc.lpszMenuName = nullptr;
+            success = RegisterClass(&wc) != 0;
+            DBG_ASSERTE(success);
+
+            mInvisHWnd = CreateWindowEx(
+                    0,
+                    _S("InvisWindow"),
+                    mTitle.c_str(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    nullptr,
+                    nullptr,
+                    gHInstance,
+                    0);
+            SetWindowLong(mInvisHWnd, GWL_USERDATA, (LONG) this);
+        }
+    }
+
+    mHandCursor = CreateCursor(gHInstance, 11, 4, 32, 32, gFingerCursorData, gFingerCursorData + sizeof(gFingerCursorData) / 2);
+    mDraggingCursor = CreateCursor(gHInstance, 15, 10, 32, 32, gDraggingCursorData, gDraggingCursorData+sizeof(gDraggingCursorData)/2);
+
+    // Let app do something before showing window, or switching to fullscreen mode
+    // NOTE: Moved call to PreDisplayHook above mIsWindowed and GetSystemsMetrics
+    // checks because the checks below use values that could change in PreDisplayHook.
+    // PreDisplayHook must call mWidgetManager->Resize if it changes mWidth or mHeight.
+    PreDisplayHook();
+
+    mWidgetManager->Resize(Rect(0, 0, mWidth, mHeight), Rect(0, 0, mWidth, mHeight));
+
+    // Check to see if we CAN run windowed or not...
+    /*if (mIsWindowed && !mFullScreenWindow)
+    {
+        // How can we be windowed if our screen isn't even big enough?
+        if ((mWidth >= GetSystemMetrics(SM_CXFULLSCREEN)) ||
+            (mHeight >= GetSystemMetrics(SM_CYFULLSCREEN)))
+        {
+            mIsWindowed = false;
+            mForceFullscreen = true;
+        }
+    }*/
+
+    if (mFullScreenWindow)
+    {
+        EnumWindows(ChangeDisplayWindowEnumProc, 0); // record window pos
+        DEVMODE dm;
+        EnumDisplaySettings(nullptr, ENUM_CURRENT_SETTINGS, &dm);
+
+        // Switch resolutions
+        if (dm.dmPelsWidth != mWidth || dm.dmPelsHeight != mHeight || (dm.dmBitsPerPel != 16 && dm.dmBitsPerPel != 32))
+        {
+            dm.dmPelsWidth = mWidth;
+            dm.dmPelsHeight = mHeight;
+            dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+
+            if (dm.dmBitsPerPel != 16 && dm.dmBitsPerPel != 32) // handle 24-bit/256 color case
+            {
+                dm.dmBitsPerPel = 16;
+                dm.dmFields |= DM_BITSPERPEL;
+            }
+
+            if (ChangeDisplaySettings(&dm,CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
+            {
+                mFullScreenWindow = false;
+                mIsWindowed = false;
+            }
+        }
+    }
+
+    MakeWindow();
+
+    if (mPlayingDemoBuffer)
+    {
+        // Get video data
+
+        PrepareDemoCommand(true);
+        mDemoNeedsCommand = true;
+
+        DBG_ASSERTE(!mDemoIsShortCmd);
+        DBG_ASSERTE(mDemoCmdNum == DEMO_VIDEO_DATA);
+
+        mIsWindowed = mDemoBuffer.ReadBoolean();
+        mSyncRefreshRate = mDemoBuffer.ReadByte();
+    }
+
+    if (mSoundManager == nullptr)
+        mSoundManager = new DSoundManager(mNoSoundNeeded ? nullptr : mHWnd, mWantFMod);
+
+    SetSfxVolume(mSfxVolume);
+
+    mMusicInterface = CreateMusicInterface(mInvisHWnd);
+
+    SetMusicVolume(mMusicVolume);
+
+    if (IsScreenSaver())
+    {
+        SetCursor(CURSOR_NONE);
+    }
+
+    InitHook();
+
+    Locale::SetLocale(GetString("LOCALE", _S("English_United States")));
+
+    mInitialized = true;
+
+    // TODO: Implement
+}
+
+MusicInterface* SexyAppBase::CreateMusicInterface(HWND theWindow)
+{
+    if (mNoSoundNeeded)
+        return new MusicInterface;
+    else if (mWantFMod)
+        return new FModMusicInterface(mInvisHWnd);
+    else
+        return new BassMusicInterface(mInvisHWnd);
+}
+
+void SexyAppBase::InitHook() {}
+
+void SexyAppBase::ReadFromRegistry()
 {
     // TODO: Implement
 }
 
-void Sexy::SexyAppBase::Start()
+void SexyAppBase::PreDisplayHook() {}
+
+void SexyAppBase::HandleGameAlreadyRunning()
+{
+    if (mOnlyAllowOneCopyToRun)
+    {
+        // Notify the other window and then shut ourselves down
+        if (mNotifyGameMessage != 0)
+            PostMessage(HWND_BROADCAST, mNotifyGameMessage, 0, 0);
+
+        DoExit(0);
+    }
+}
+
+void SexyAppBase::Start()
 {
     // TODO: Implement
 }
 
-void Sexy::SexyAppBase::Shutdown()
+void SexyAppBase::Shutdown()
 {
     // TODO: Implement
+}
+
+void SexyAppBase::DoParseCmdLine()
+{
+    char* aCmdLine = GetCommandLineA();
+    char* aCmdLinePtr = aCmdLine;
+    if (aCmdLinePtr[0] == '"')
+    {
+        aCmdLinePtr = strchr(aCmdLinePtr + 1, '"');
+        if (aCmdLinePtr != nullptr)
+            aCmdLinePtr++;
+    }
+
+    if (aCmdLinePtr != nullptr)
+    {
+        aCmdLinePtr = strchr(aCmdLinePtr, ' ');
+        if (aCmdLinePtr != nullptr)
+            ParseCmdLine(aCmdLinePtr + 1);
+    }
+
+    mCmdLineParsed = true;
+}
+
+void SexyAppBase::ParseCmdLine(const std::string &theCmdLine)
+{
+    // TODO: Implement
+}
+
+bool SexyAppBase::ChangeDirHook(const char *theIntendedPath)
+{
+    return false;
+}
+
+void SexyAppBase::RestoreScreenResolution()
+{
+    if (mFullScreenWindow)
+    {
+        EnumWindows(ChangeDisplayWindowEnumProc, 0); // get any windows that appeared while we were running
+        ChangeDisplaySettings(nullptr, 0);
+        EnumWindows(ChangeDisplayWindowEnumProc, 1); // restore window pos
+        mFullScreenWindow = false;
+    }
+}
+
+void SexyAppBase::DoExit(int theCode)
+{
+    RestoreScreenResolution();
+    exit(theCode);
+}
+
+void SexyAppBase::SetCursor(int theCursorNum)
+{
+    mCursorNum = theCursorNum;
+    EnforceCursor();
 }
 
 void SexyAppBase::ClearKeysDown()
@@ -471,6 +932,11 @@ void SexyAppBase::SEHOccured()
     EnforceCursor();
 }
 
+void SexyAppBase::MakeWindow()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::EnforceCursor()
 {
     // TODO: Implement
@@ -480,6 +946,13 @@ void SexyAppBase::SetMusicVolume(double theVolume)
 {
     // TODO: Implement
 }
+
+void SexyAppBase::SetSfxVolume(double theVolume)
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::InitPropertiesHook() {}
 
 void SexyAppBase::SetString(const std::string& theId, const std::wstring& theValue)
 {
@@ -514,6 +987,18 @@ SexyString SexyAppBase::GetString(const std::string& theId, const SexyString& th
         return theDefault;
 }
 
+bool SexyAppBase::PrepareDemoCommand(bool required)
+{
+    // TODO: Implement
+    return false;
+}
+
+bool SexyAppBase::ReadDemoBuffer(std::string &theError)
+{
+    // TODO: Implement
+    return false;
+}
+
 void SexyAppBase::ClearUpdateBacklog(bool relaxForASecond)
 {
     mLastTimeCheck = timeGetTime();
@@ -526,4 +1011,29 @@ void SexyAppBase::ClearUpdateBacklog(bool relaxForASecond)
 bool SexyAppBase::IsScreenSaver()
 {
     return mIsScreenSaver;
+}
+
+static bool ScreenSaverWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT &theResult)
+{
+    // TODO: Implement
+    return false;
+}
+
+LRESULT CALLBACK SexyAppBase::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    if (gSexyAppBase != nullptr && gSexyAppBase->IsScreenSaver())
+    {
+        LRESULT aResult;
+        if (ScreenSaverWindowProc(hWnd, uMsg, wParam, lParam, aResult))
+            return aResult;
+    }
+
+    SexyAppBase* aSexyApp = (SexyAppBase*) GetWindowLong(hWnd, GWL_USERDATA);
+
+    // TODO: Implement
+
+    if (gSexyAppBase->mIsWideWindow)
+        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+    else
+        return DefWindowProcA(hWnd, uMsg, wParam, lParam);
 }

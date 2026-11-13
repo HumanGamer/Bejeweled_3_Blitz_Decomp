@@ -30,6 +30,10 @@ namespace Sexy
 	    WidgetManager(SexyAppBase* theApplet);
 	    virtual ~WidgetManager();
 
+        // TODO: Implement
+
+        void Resize(const Rect& theMouseDestRect, const Rect& theMouseSourceRect);
+
         void DoMouseUps();
     };
 }

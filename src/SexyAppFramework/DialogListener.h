@@ -6,6 +6,8 @@ namespace Sexy
 {
     class DialogListener
     {
-        // TODO: Implement
+    public:
+        virtual void DialogButtonPress(int theDialogId, int theButtonId) {}
+        virtual void DialogButtonDepress(int theDialogId, int theButtonId) {}
     };
 }

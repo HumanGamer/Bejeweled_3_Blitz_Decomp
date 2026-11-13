@@ -12,6 +12,11 @@ WidgetManager::~WidgetManager()
     // TODO: Implement
 }
 
+void WidgetManager::Resize(const Rect &theMouseDestRect, const Rect &theMouseSourceRect)
+{
+    // TODO: Implement
+}
+
 void WidgetManager::DoMouseUps()
 {
     // TODO: Implement

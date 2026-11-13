@@ -97,12 +97,25 @@ typedef SexyString::value_type					SexyChar;
 
 namespace Sexy
 {
+    const ulong SEXY_RAND_MAX = 0x7FFFFFFF;
+
+    extern bool gDebug;
     extern HINSTANCE gHInstance;
+
+    int Rand();
+    int Rand(int range);
+    float Rand(float range);
+    void SRand(ulong theSeed);
 
     extern std::string	vformat(const char* fmt, va_list argPtr);
     extern std::wstring	vformat(const wchar_t* fmt, va_list argPtr);
     extern std::string	StrFormat(const char* fmt ...);
     extern std::wstring	StrFormat(const wchar_t* fmt ...);
+
+    bool CheckFor98Mill();
+    bool CheckForVista();
+    std::string GetAppDataFolder();
+    void SetAppDataFolder(const std::string& thePath);
 
     std::wstring		StringToWString(const std::string &theString);
     std::string			WStringToString(const std::wstring &theString);
@@ -119,4 +132,6 @@ namespace Sexy
     bool StringToDouble(const std::wstring theString, double* theDoubleVal);
 
     std::string GetFileDir(const std::string& thePath, bool withSlash = false);
+
+    std::string RemoveTrailingSlash(const std::string& theDirectory);
 }

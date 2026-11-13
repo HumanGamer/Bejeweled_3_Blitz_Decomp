@@ -17,5 +17,10 @@ namespace Sexy
     public:
         Buffer();
         virtual ~Buffer();
+
+        // TODO: Implement
+
+        uchar ReadByte() const;
+        bool ReadBoolean() const;
     };
 }

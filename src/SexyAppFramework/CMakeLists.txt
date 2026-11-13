@@ -55,12 +55,25 @@ target_sources(${PROJECT_NAME} PRIVATE
     DDInterface.h
     NativeDisplay.cpp
     NativeDisplay.h
+    SexyLocale.cpp
+    SexyLocale.h
+    MusicInterface.cpp
+    MusicInterface.h
+    FModMusicInterface.cpp
+    FModMusicInterface.h
+    BassMusicInterface.cpp
+    BassMusicInterface.h
+    SoundManager.h
+    DSoundManager.cpp
+    DSoundManager.h
+    MTRand.cpp
+    MTRand.h
     Debug.cpp
     Debug.h
     memmgr.h
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC winmm Sexy::ImageLib)
+target_link_libraries(${PROJECT_NAME} PUBLIC winmm Sexy::ImageLib Sexy::PakLib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING)
 

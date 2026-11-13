@@ -1,8 +1,36 @@
 #include "Common.h"
 
 #include "Debug.h"
+#include "MTRand.h"
 
 HINSTANCE Sexy::gHInstance;
+bool Sexy::gDebug = false;
+static Sexy::MTRand gMTRand;
+
+namespace Sexy
+{
+	std::string gAppDataFolder;
+}
+
+int Sexy::Rand()
+{
+	return gMTRand.Next();
+}
+
+int Sexy::Rand(int range)
+{
+	return gMTRand.Next((unsigned long)range);
+}
+
+float Sexy::Rand(float range)
+{
+	return gMTRand.Next(range);
+}
+
+void Sexy::SRand(ulong theSeed)
+{
+	gMTRand.SRand(theSeed);
+}
 
 std::string Sexy::vformat(const char* fmt, va_list argPtr)
 {
@@ -139,6 +167,82 @@ std::wstring Sexy::StrFormat(const wchar_t* fmt ...)
     va_end(argList);
 
     return result;
+}
+
+bool Sexy::CheckFor98Mill()
+{
+	// TODO: Copied from PopcapFramework 1.3, needs to be verified against decomp
+
+	static bool needOsCheck = true;
+	static bool is98Mill = false;
+
+	if (needOsCheck)
+	{
+		bool invalid = false;
+		OSVERSIONINFOEXA osvi;
+		ZeroMemory(&osvi, sizeof(OSVERSIONINFOEXA));
+
+		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
+		if( GetVersionExA((LPOSVERSIONINFOA)&osvi) == 0)
+		{
+			osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFOA);
+			if ( GetVersionExA((LPOSVERSIONINFOA)&osvi) == 0)
+				return false;
+		}
+
+		needOsCheck = false;
+		is98Mill = osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS; // let's check Win95, 98, *AND* ME.
+	}
+
+	return is98Mill;
+}
+
+bool Sexy::CheckForVista()
+{
+	// TODO: Copied from PopcapFramework 1.3, needs to be verified against decomp
+
+	static bool needOsCheck = true;
+	static bool isVista = false;
+
+	if (needOsCheck)
+	{
+		bool invalid = false;
+		OSVERSIONINFOEXA osvi;
+		ZeroMemory(&osvi, sizeof(OSVERSIONINFOEXA));
+
+		osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
+		if( GetVersionExA((LPOSVERSIONINFOA)&osvi) == 0)
+		{
+			osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFOA);
+			if ( GetVersionExA((LPOSVERSIONINFOA)&osvi) == 0)
+				return false;
+		}
+
+		needOsCheck = false;
+		isVista = osvi.dwMajorVersion >= 6;
+	}
+
+	return isVista;
+}
+
+std::string Sexy::GetAppDataFolder()
+{
+	return Sexy::gAppDataFolder;
+}
+
+void Sexy::SetAppDataFolder(const std::string& thePath)
+{
+	if (CheckForVista())
+	{
+		std::string aPath = thePath;
+		if (!aPath.empty())
+		{
+			if (aPath[aPath.length()-1] != '\\' && aPath[aPath.length()-1] != '/')
+				aPath += '\\';
+		}
+
+		Sexy::gAppDataFolder = aPath;
+	}
 }
 
 std::wstring Sexy::StringToWString(const std::string &theString)
@@ -464,4 +568,16 @@ std::string Sexy::GetFileDir(const std::string& thePath, bool withSlash)
         else
             return thePath.substr(0, aLastSlash);
     }
+}
+
+std::string Sexy::RemoveTrailingSlash(const std::string& theDirectory)
+{
+    // TODO: Copied from PopcapFramework 1.3, needs to be verified against decomp
+
+	int aLen = theDirectory.length();
+
+	if ((aLen > 0) && ((theDirectory[aLen-1] == '\\') || (theDirectory[aLen-1] == '/')))
+		return theDirectory.substr(0, aLen - 1);
+	else
+		return theDirectory;
 }
