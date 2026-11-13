@@ -380,7 +380,15 @@ namespace Sexy
         LONG mOldWndProc;
 
     protected:
+	    void RehupFocus();
+        void ClearKeysDown();
 
+        virtual void MakeWindow();
+        virtual void EnforceCursor();
+        virtual void ReInitImages();
+        
+        void RestoreScreenResolution();
+        void DoExit(int theCode);
 
     public:
         SexyAppBase();
@@ -403,12 +411,8 @@ namespace Sexy
 
         virtual bool ChangeDirHook(const char *theIntendedPath);
 
-        void RestoreScreenResolution();
-        void DoExit(int theCode);
-
         void SetCursor(int theCursorNum);
 
-        void ClearKeysDown();
 
         virtual void BeginPopup();
         virtual void EndPopup();
@@ -422,11 +426,10 @@ namespace Sexy
 
         virtual void SEHOccured();
 
-        virtual void MakeWindow();
-        virtual void EnforceCursor();
-
         virtual void SetMusicVolume(double theVolume);
-	    virtual void SetSfxVolume(double theVolume);
+        virtual void SetSfxVolume(double theVolume);
+        virtual void Mute(bool autoMute = false);
+        virtual void Unmute(bool autoMute = false);
 
         virtual void InitPropertiesHook();
 
@@ -435,9 +438,19 @@ namespace Sexy
         SexyString GetString(const std::string& theId);
         SexyString GetString(const std::string& theId, const SexyString& theDefault);
 
+        bool RegistryReadBoolean(const std::string& theValueName, bool* theValue);
+
         bool PrepareDemoCommand(bool required);
 	    bool ReadDemoBuffer(std::string &theError);//UNICODE
 
+        bool Is3DAccelerated();
+	    void Set3DAccelerated(bool is3D, bool reinit = true);
+
+        virtual void SwitchScreenMode();
+        virtual void SwitchScreenMode(bool wantWindowed);
+        virtual void SwitchScreenMode(bool wantWindowed, bool is3d, bool force = false);
+
+        int InitDDInterface();
         void ClearUpdateBacklog(bool relaxForASecond = false);
         bool IsScreenSaver();
 

@@ -53,6 +53,12 @@ target_sources(${PROJECT_NAME} PRIVATE
     CfgMachine.h
     DDInterface.cpp
     DDInterface.h
+    DDImage.cpp
+    DDImage.h
+    MemoryImage.cpp
+    MemoryImage.h
+    Image.cpp
+    Image.h
     NativeDisplay.cpp
     NativeDisplay.h
     SexyLocale.cpp

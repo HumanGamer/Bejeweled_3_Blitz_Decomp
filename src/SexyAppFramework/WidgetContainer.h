@@ -13,6 +13,16 @@ namespace Sexy
 
     class WidgetContainer
     {
+    public:
         // TODO: Implement
+
+        int mX;
+        int mY;
+        int mWidth;
+        int mHeight;
+
+        // TODO: Implement
+
+        virtual void MarkAllDirty();
     };
 }

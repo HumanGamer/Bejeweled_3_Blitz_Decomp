@@ -8,6 +8,7 @@
 
 #include "BassMusicInterface.h"
 #include "CfgMachine.h"
+#include "DDImage.h"
 #include "DDInterface.h"
 #include "Debug.h"
 #include "DSoundManager.h"
@@ -761,6 +762,11 @@ void SexyAppBase::SetCursor(int theCursorNum)
     EnforceCursor();
 }
 
+void SexyAppBase::RehupFocus()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::ClearKeysDown()
 {
     if (mWidgetManager != nullptr) // fix stuck alt-key problem
@@ -934,10 +940,334 @@ void SexyAppBase::SEHOccured()
 
 void SexyAppBase::MakeWindow()
 {
+	//OutputDebugString("MAKING WINDOW\r\n");
+
+    if (mHWnd != nullptr)
+    {
+        SetWindowLong(mHWnd, GWL_USERDATA, (LONG) nullptr);
+        HWND anOldWindow = mHWnd;
+        mHWnd = nullptr;
+        DestroyWindow(anOldWindow);
+        mWidgetManager->mImage = nullptr;
+    }
+
+    // Get the work area of the desktop to allow us to center
+    RECT aDesktopRect;
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &aDesktopRect, 0);
+    bool wide;
+    if (mWidescreenAware && mAllowWindowResize && mOrigScreenHeight > 600)
+    {
+        wide = true;
+    }
+    else
+    {
+        wide = false;
+        if (!mFullScreenWindow && (mHeight >= aDesktopRect.bottom - aDesktopRect.top || mWidescreenAware >= aDesktopRect.right - aDesktopRect.left))
+        {
+            mForceFullScreen = true;
+            mIsWindowed = false;
+        }
+    }
+
+    if (mPlayingDemoBuffer || (mIsWindowed && !mFullScreenWindow))
+    {
+        DWORD aWindowStyle = WS_CLIPCHILDREN | WS_POPUP | WS_BORDER | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+        if (mEnableMaximizeButton)
+            aWindowStyle |= WS_MAXIMIZEBOX;
+
+        int width = mWidth;
+        int height = mHeight;
+
+        if (mEnableWindowAspect)
+            width = mHeight * mWindowAspect;
+
+        if (wide)
+        {
+            if (mHeight >= mOrigScreenHeight * 0.75)
+                height = mOrigScreenHeight * 0.75;
+
+            if (mPreferredHeight != -1)
+                height = mPreferredHeight;
+
+            double num = (aDesktopRect.bottom - aDesktopRect.top) * 0.9; // 0.8999999761581421 in decomp
+
+            if (mHeight <= num)
+                num = mHeight;
+
+            if (height > num)
+                height = num;
+
+            if (mEnableWindowAspect)
+            {
+                width = height * mWindowAspect;
+            }
+            else
+            {
+                width = height * Ratio(mWidth, mHeight);
+            }
+        }
+
+        RECT aRect;
+        aRect.left = 0;
+        aRect.top = 0;
+        aRect.right = width;
+        aRect.bottom = height;
+
+        BOOL worked = AdjustWindowRect(&aRect, aWindowStyle, FALSE);
+
+        int aWidth = aRect.right - aRect.left;
+        int aHeight = aRect.bottom - aRect.top;
+
+        int aPlaceX = 64;
+        int aPlaceY = 64;
+
+        if (mPreferredX != -1)
+        {
+            aPlaceX = mPreferredX;
+            aPlaceY = mPreferredY;
+
+            int aSpacing = 4;
+
+            if (aPlaceX < aDesktopRect.left + aSpacing)
+                aPlaceX = aDesktopRect.left + aSpacing;
+
+            if (aPlaceY < aDesktopRect.top + aSpacing)
+                aPlaceY = aDesktopRect.top + aSpacing;
+
+            if (aPlaceX + aWidth >= aDesktopRect.right - aSpacing)
+                aPlaceX = aDesktopRect.right - aWidth - aSpacing;
+
+            if (aPlaceY + aHeight >= aDesktopRect.bottom - aSpacing)
+                aPlaceY = aDesktopRect.bottom - aHeight - aSpacing;
+        }
+
+        if (CheckFor98Mill())
+        {
+            mHWnd = CreateWindowExA(
+                0,
+                "MainWindow",
+                SexyStringToStringFast(mTitle).c_str(),
+                aWindowStyle,
+                aPlaceX,
+                aPlaceY,
+                aWidth,
+                aHeight,
+                nullptr,
+                nullptr,
+                gHInstance,
+                nullptr);
+        }
+        else
+        {
+            mHWnd = CreateWindowEx(
+                0,
+                _S("MainWindow"),
+                mTitle.c_str(),
+                aWindowStyle,
+                aPlaceX,
+                aPlaceY,
+                aWidth,
+                aHeight,
+                nullptr,
+                nullptr,
+                gHInstance,
+                nullptr);
+        }
+
+        if (mPreferredX == -1)
+        {
+            MoveWindow(mHWnd,
+                aDesktopRect.left + ((aDesktopRect.right - aDesktopRect.left) - aWidth) / 2,
+                aDesktopRect.top + (int) (((aDesktopRect.bottom - aDesktopRect.top) - aHeight) * 0.382),
+                aWidth, aHeight, FALSE);
+        }
+
+        mIsPhysWindowed = true;
+    }
+    else
+    {
+        if (CheckFor98Mill())
+        {
+            mHWnd = CreateWindowExA(
+                WS_EX_TOPMOST,
+                "MainWindow",
+                SexyStringToStringFast(mTitle).c_str(),
+                WS_POPUP | WS_VISIBLE,
+                0,
+                0,
+                mWidth,
+                mHeight,
+                nullptr,
+                nullptr,
+                gHInstance,
+                nullptr);
+        }
+        else
+        {
+            mHWnd = CreateWindowEx(
+                WS_EX_TOPMOST,
+                _S("MainWindow"),
+                mTitle.c_str(),
+                WS_POPUP | WS_VISIBLE,
+                0,
+                0,
+                GetSystemMetrics(SM_CXSCREEN),
+                GetSystemMetrics(SM_CYSCREEN),
+                nullptr,
+                nullptr,
+                gHInstance,
+                nullptr);
+        }
+
+        mIsPhysWindowed = false;
+    }
+
+    /*char aStr[256];
+    sprintf(aStr, "HWND: %d\r\n", mHWnd);
+    OutputDebugString(aStr);*/
+
+    SetWindowLong(mHWnd, GWL_USERDATA, (LONG) this);
+
+    if (mDDInterface == nullptr)
+    {
+        mDDInterface = new DDInterface(this);
+
+        // Enable 3d setting
+        bool is3D = false;
+        bool is3DOptionSet = RegistryReadBoolean("Is3D", &is3D);
+        if (is3DOptionSet)
+        {
+            if (mAutoEnable3D)
+            {
+                mAutoEnable3D = false;
+                mTest3D = true;
+            }
+
+            if (is3D)
+                mTest3D = true;
+
+            mDDInterface->mIs3D = is3D;
+        }
+    }
+
+    int aResult = InitDDInterface();
+    if (mIsWindowed && aResult == DDInterface::RESULT_INVALID_COLORDEPTH)
+    {
+        if (mForceWindowed)
+        {
+            Popup(GetString("PLEASE_SET_COLOR_DEPTH", _S("Please set your desktop color depth to 16 bit.")));
+            DoExit(1);
+        }
+        else
+        {
+            mForceFullScreen = true;
+            SwitchScreenMode(false);
+        }
+
+        return;
+    }
+    else if (!mIsWindowed && (aResult == DDInterface::RESULT_EXCLUSIVE_FAIL ||
+                              aResult == DDInterface::RESULT_DISPCHANGE_FAIL))
+    {
+        mForceWindowed = true;
+        SwitchScreenMode(true);
+    }
+    else if (aResult == DDInterface::RESULT_3D_FAIL)
+    {
+        Set3DAccelerated(false);
+        return;
+    }
+    else if (aResult != DDInterface::RESULT_OK)
+    {
+        if (Is3DAccelerated())
+        {
+            Set3DAccelerated(false);
+            return;
+        }
+        else
+        {
+            Popup(GetString("FAILED_INIT_DIRECTDRAW", _S("Failed to initialize DirectDraw: ")) + StringToSexyString(DDInterface::ResultToString(aResult) + " " + mDDInterface->mErrorString));
+            DoExit(1);
+        }
+    }
+
+    if (!Is3DAccelerated() && mIsWindowed)
+    {
+        RECT clientRect;
+        GetClientRect(mHWnd, &clientRect);
+
+        int newWidth = mWidgetManager->mWidth;
+        int newHeight = mWidgetManager->mHeight;
+
+        if (mEnableWindowAspect)
+            newWidth = newHeight * mWindowAspect;
+
+        if (clientRect.right != newWidth || clientRect.bottom != newHeight)
+        {
+            if (newHeight >= aDesktopRect.bottom - aDesktopRect.top)
+            {
+                mForceFullScreen = true;
+                SwitchScreenMode(false);
+                return;
+            }
+
+            int newX = 64;
+            int newY = 64;
+            if (mPreferredX != -1)
+            {
+                int aSpacing = 4;
+
+                if (aDesktopRect.left + aSpacing > 64)
+                    newX = aDesktopRect.left + aSpacing;
+
+                if (aDesktopRect.top + aSpacing > 64)
+                    newY = aDesktopRect.top + aSpacing;
+
+                if (newX + newWidth >= aDesktopRect.right - aSpacing)
+                    newX = aDesktopRect.right - newWidth - aSpacing;
+
+                if (newY + newHeight >= aDesktopRect.bottom - aSpacing)
+                    newY = aDesktopRect.bottom - newHeight - aSpacing;
+            }
+
+            MoveWindow(mHWnd, newX, newY, newWidth, newHeight, FALSE);
+        }
+    }
+
+    bool isActive = mActive;
+    mActive = GetActiveWindow() == mHWnd;
+
+    mPhysMinimized = false;
+    if (mMinimized)
+    {
+        if (mMuteOnLostFocus)
+            Unmute(true);
+
+        mMinimized = false;
+        isActive = mActive; // set this here so we don't call RehupFocus again.
+        RehupFocus();
+    }
+
+    if (isActive != mActive)
+        RehupFocus();
+
+    ReInitImages();
+
+    mWidgetManager->mImage = mDDInterface->GetScreenImage();
+    mWidgetManager->MarkAllDirty();
+
+    SetTimer(mHWnd, 100, mFrameTime, nullptr);
+
+
     // TODO: Implement
 }
 
 void SexyAppBase::EnforceCursor()
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::ReInitImages()
 {
     // TODO: Implement
 }
@@ -948,6 +1278,16 @@ void SexyAppBase::SetMusicVolume(double theVolume)
 }
 
 void SexyAppBase::SetSfxVolume(double theVolume)
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::Mute(bool autoMute)
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::Unmute(bool autoMute)
 {
     // TODO: Implement
 }
@@ -987,6 +1327,12 @@ SexyString SexyAppBase::GetString(const std::string& theId, const SexyString& th
         return theDefault;
 }
 
+bool SexyAppBase::RegistryReadBoolean(const std::string& theKey, bool* theValue)
+{
+    // TODO: Implement
+    return false;
+}
+
 bool SexyAppBase::PrepareDemoCommand(bool required)
 {
     // TODO: Implement
@@ -997,6 +1343,37 @@ bool SexyAppBase::ReadDemoBuffer(std::string &theError)
 {
     // TODO: Implement
     return false;
+}
+
+bool SexyAppBase::Is3DAccelerated()
+{
+    return mDDInterface->mIs3D;
+}
+
+void SexyAppBase::Set3DAccelerated(bool is3D, bool reinit)
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::SwitchScreenMode()
+{
+	SwitchScreenMode(mIsWindowed, Is3DAccelerated(), true);
+}
+
+void SexyAppBase::SwitchScreenMode(bool wantWindowed)
+{
+	SwitchScreenMode(wantWindowed, Is3DAccelerated());
+}
+
+void SexyAppBase::SwitchScreenMode(bool wantWindowed, bool is3d, bool force)
+{
+    // TODO: Implement
+}
+
+int SexyAppBase::InitDDInterface()
+{
+    // TODO: Implement
+    return DDInterface::EResult::RESULT_OK;
 }
 
 void SexyAppBase::ClearUpdateBacklog(bool relaxForASecond)

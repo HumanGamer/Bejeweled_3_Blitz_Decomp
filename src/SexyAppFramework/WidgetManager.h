@@ -5,11 +5,19 @@
 
 namespace Sexy
 {
+    class MemoryImage;
     class SexyAppBase;
 
     class WidgetManager : public WidgetContainer
     {
     public:
+        // TODO: Implement
+
+        SexyAppBase* mApp;
+        MemoryImage* mImage;
+        MemoryImage* mTransientImage;
+        bool mLastHadTransients;
+
         // TODO: Implement
 
         Rect mMouseDestRect;
