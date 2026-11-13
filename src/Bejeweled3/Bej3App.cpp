@@ -14,5 +14,7 @@ Sexy::Bej3App::~Bej3App()
 
 void Sexy::Bej3App::Init()
 {
+    SexyApp::Init();
+
     // TODO: Implement
 }

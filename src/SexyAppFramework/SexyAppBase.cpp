@@ -663,8 +663,6 @@ void SexyAppBase::Init()
     Locale::SetLocale(GetString("LOCALE", _S("English_United States")));
 
     mInitialized = true;
-
-    // TODO: Implement
 }
 
 MusicInterface* SexyAppBase::CreateMusicInterface(HWND theWindow)
