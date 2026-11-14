@@ -11,3 +11,9 @@ ICfgMachine *CfgCompiler::CompilerCreateMachineFromFile(const std::string &file,
 {
     return nullptr; // TODO: Implement
 }
+
+int CfgMachineValue::GetInteger()
+{
+    // TODO: Implement
+    return 0;
+}

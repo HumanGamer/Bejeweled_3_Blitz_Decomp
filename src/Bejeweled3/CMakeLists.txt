@@ -10,6 +10,12 @@ target_sources(${PROJECT_NAME} PRIVATE
     Bej3.cpp
     Bej3App.cpp
     Bej3App.h
+    GraphicsRecorder.cpp
+    GraphicsRecorder.h
+    UnderDialogWidget.cpp
+    UnderDialogWidget.h
+    PopDRMComm.cpp
+    PopDRMComm.h
 )
 
 target_link_libraries(${PROJECT_NAME} Sexy::AppFramework)

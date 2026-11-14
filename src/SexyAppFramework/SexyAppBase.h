@@ -433,6 +433,7 @@ namespace Sexy
 
         virtual void InitPropertiesHook();
 
+        void SetInteger(const std::string& theId, int theValue);
         void SetString(const std::string& theId, const std::wstring& theValue);
 
         SexyString GetString(const std::string& theId);

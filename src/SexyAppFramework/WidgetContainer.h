@@ -16,10 +16,15 @@ namespace Sexy
     public:
         // TODO: Implement
 
+        uint mLastWMUpdateCount;
+        int mUpdateCnt;
+        bool mDirty;
         int mX;
         int mY;
         int mWidth;
         int mHeight;
+        bool mHasAlpha;
+        bool mClip;
 
         // TODO: Implement
 

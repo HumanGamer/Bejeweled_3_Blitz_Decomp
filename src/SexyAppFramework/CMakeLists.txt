@@ -16,6 +16,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     HTTPTransfer.h
     Buffer.cpp
     Buffer.h
+    Color.cpp
+    Color.h
+    Widget.cpp
+    Widget.h
     WinInetHTTPTransfer.cpp
     WinInetHTTPTransfer.h
     ButtonListener.cpp
@@ -51,6 +55,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     SharedRenderTarget.h
     CfgMachine.cpp
     CfgMachine.h
+    D3DTester.cpp
+    D3DTester.h
     DDInterface.cpp
     DDInterface.h
     DDImage.cpp

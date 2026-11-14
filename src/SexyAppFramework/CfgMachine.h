@@ -21,6 +21,8 @@ namespace Sexy
         int mIntValue;
         double mDoubleValue;
         SexyString mStringValue; // TODO: might be std::wstring instead of SexyString
+
+        int GetInteger();
     };
 
     class ICfgMachine

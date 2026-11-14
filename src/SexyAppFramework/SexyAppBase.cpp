@@ -1289,6 +1289,13 @@ void SexyAppBase::Unmute(bool autoMute)
 
 void SexyAppBase::InitPropertiesHook() {}
 
+void SexyAppBase::SetInteger(const std::string &theId, int theValue)
+{
+    std::pair<StringIntMap::iterator, bool> aPair = mIntProperties.insert(StringIntMap::value_type(theId, theValue));
+    if (!aPair.second) // Found it, change value
+        aPair.first->second = theValue;
+}
+
 void SexyAppBase::SetString(const std::string& theId, const std::wstring& theValue)
 {
     std::pair<StringWStringMap::iterator, bool> aPair = mStringProperties.insert(StringWStringMap::value_type(theId, theValue));
