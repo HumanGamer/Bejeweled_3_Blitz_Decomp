@@ -5,6 +5,7 @@
 #include <time.h>
 #include <shlobj.h>
 #include <direct.h>
+#include <process.h>
 
 #include "BassMusicInterface.h"
 #include "CfgMachine.h"
@@ -677,6 +678,13 @@ MusicInterface* SexyAppBase::CreateMusicInterface(HWND theWindow)
 
 void SexyAppBase::InitHook() {}
 
+void SexyAppBase::PreTerminate() {}
+
+void SexyAppBase::WriteToRegistry()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::ReadFromRegistry()
 {
     // TODO: Implement
@@ -696,9 +704,148 @@ void SexyAppBase::HandleGameAlreadyRunning()
     }
 }
 
+void SexyAppBase::DoMainLoop()
+{
+    while (!mShutdown)
+    {
+        if (mExitToTop)
+            mExitToTop = false;
+        UpdateApp();
+    }
+}
+
+bool SexyAppBase::UpdateAppStep(bool* updated)
+{
+    if (updated != nullptr)
+        *updated = false;
+
+    if (mExitToTop)
+        return false;
+
+    if (mUpdateAppState == UPDATESTATE_PROCESS_DONE)
+        mUpdateAppState = UPDATESTATE_MESSAGES;
+
+    mUpdateAppDepth++;
+
+    // We update in two stages to avoid doing a Process if our loop termination
+    //  condition has already been met by processing windows messages
+    if (mUpdateAppState == UPDATESTATE_MESSAGES)
+    {
+        MSG msg;
+        while ((PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) && (!mShutdown))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        ProcessDemo();
+        if (!ProcessDeferredMessages(true))
+        {
+            mUpdateAppState = UPDATESTATE_PROCESS_1;
+        }
+    }
+    else
+    {
+        // Process changes state by itself
+        if (mStepMode)
+        {
+            if (mStepMode==2)
+            {
+                Sleep(mFrameTime);
+                mUpdateAppState = UPDATESTATE_PROCESS_DONE; // skip actual update until next step
+            }
+            else
+            {
+                mStepMode = 2;
+                DoUpdateFrames();
+                DoUpdateFramesF(1.0f);
+                DrawDirtyStuff();
+            }
+        }
+        else
+        {
+            int anOldUpdateCnt = mUpdateCount;
+            Process();
+            if (updated != NULL)
+                *updated = mUpdateCount != anOldUpdateCnt;
+        }
+    }
+
+    mUpdateAppDepth--;
+
+    return true;
+}
+
+bool SexyAppBase::UpdateApp()
+{
+    bool updated;
+    for (;;)
+    {
+        if (!UpdateAppStep(&updated))
+            return false;
+        if (updated)
+            return true;
+    }
+}
+
 void SexyAppBase::Start()
 {
-    // TODO: Implement
+    if (mShutdown)
+        return;
+
+    StartCursorThread();
+
+    if (mAutoStartLoadingThread)
+        StartLoadingThread();
+
+    ShowWindow(mHWnd, SW_SHOW);
+    SetFocus(mHWnd);
+
+    timeBeginPeriod(1);
+
+    int aCount = 0;
+    int aSleepCount = 0;
+
+    DWORD aStartTime = timeGetTime();
+
+    mRunning = true;
+    mLastTime = aStartTime;
+    mLastUserInputTick = aStartTime;
+    mLastTimerTime = aStartTime;
+
+    DoMainLoop();
+    ProcessSafeDeleteList();
+
+    mRunning = false;
+
+    WaitForLoadingThread();
+
+    char aString[256];
+    sprintf(aString, "Seconds       = %g\r\n", (timeGetTime() - aStartTime) / 1000.0);
+    OutputDebugStringA(aString);
+    //sprintf(aString, "Count         = %d\r\n", aCount);
+    //OutputDebugString(aString);
+    sprintf(aString, "Sleep Count   = %d\r\n", mSleepCount);
+    OutputDebugStringA(aString);
+    sprintf(aString, "Update Count  = %d\r\n", mUpdateCount);
+    OutputDebugStringA(aString);
+    sprintf(aString, "Draw Count    = %d\r\n", mDrawCount);
+    OutputDebugStringA(aString);
+    sprintf(aString, "Draw Time     = %d\r\n", mDrawTime);
+    OutputDebugStringA(aString);
+    sprintf(aString, "Screen Blt    = %d\r\n", mScreenBltTime);
+    OutputDebugStringA(aString);
+    if (mDrawTime + mScreenBltTime > 0)
+    {
+        sprintf(aString, "Avg FPS       = %d\r\n", (mDrawCount * 1000) / (mDrawTime + mScreenBltTime));
+        OutputDebugStringA(aString);
+    }
+
+    timeEndPeriod(1);
+
+    PreTerminate();
+
+    WriteToRegistry();
 }
 
 void SexyAppBase::Shutdown()
@@ -737,6 +884,22 @@ bool SexyAppBase::ChangeDirHook(const char *theIntendedPath)
     return false;
 }
 
+void SexyAppBase::StartCursorThread()
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::WaitForLoadingThread()
+{
+    while ((mLoadingThreadStarted) && (!mLoadingThreadCompleted))
+        Sleep(20);
+}
+
+void SexyAppBase::ProcessSafeDeleteList()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::RestoreScreenResolution()
 {
     if (mFullScreenWindow)
@@ -752,6 +915,11 @@ void SexyAppBase::DoExit(int theCode)
 {
     RestoreScreenResolution();
     exit(theCode);
+}
+
+void SexyAppBase::ProcessDemo()
+{
+    // TODO: Implement
 }
 
 void SexyAppBase::SetCursor(int theCursorNum)
@@ -775,6 +943,36 @@ void SexyAppBase::ClearKeysDown()
 
     mCtrlDown = false;
     mAltDown = false;
+}
+
+// Why did I defer messages?  Oh, incase a dialog comes up such as a crash
+//  it won't keep crashing and stuff
+bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
+{
+    // TODO: Implement
+    return false;
+}
+
+bool SexyAppBase::Process(bool allowSleep)
+{
+    // TODO: Implement
+    return false;
+}
+
+void SexyAppBase::UpdateFrames()
+{
+    // TODO: Implement
+}
+
+void SexyAppBase::DoUpdateFramesF(float theFrac)
+{
+    // TODO: Implement
+}
+
+bool SexyAppBase::DoUpdateFrames()
+{
+    // TODO: Implement
+    return false;
 }
 
 void SexyAppBase::BeginPopup()
@@ -1287,6 +1485,39 @@ void SexyAppBase::Unmute(bool autoMute)
     // TODO: Implement
 }
 
+void SexyAppBase::LoadingThreadProc() {}
+void SexyAppBase::LoadingThreadCompleted() {}
+
+void SexyAppBase::LoadingThreadProcStub(void *theArg)
+{
+    SexyAppBase* aSexyApp = (SexyAppBase*) theArg;
+
+    aSexyApp->LoadingThreadProc();
+
+    char aStr[256];
+    sprintf(aStr, "Resource Loading Time: %d\r\n", (GetTickCount() - aSexyApp->mTimeLoaded));
+    OutputDebugStringA(aStr);
+
+    aSexyApp->mLoadingThreadCompleted = true;
+}
+
+void SexyAppBase::StartLoadingThread()
+{
+    if (!mLoadingThreadStarted)
+    {
+        mYieldMainThread = true;
+        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+        mLoadingThreadStarted = true;
+        _beginthread(LoadingThreadProcStub, 0, this);
+    }
+}
+
+bool SexyAppBase::DrawDirtyStuff()
+{
+    // TODO: Implement
+    return false;
+}
+
 void SexyAppBase::InitPropertiesHook() {}
 
 void SexyAppBase::SetInteger(const std::string &theId, int theValue)
@@ -1306,6 +1537,27 @@ void SexyAppBase::SetString(const std::string& theId, const std::wstring& theVal
     int anId;
     if (StringToInt(theId, &anId))
         mPopLoc->SetString(anId, ToSexyString(theValue), false);
+}
+
+int SexyAppBase::GetInteger(const std::string& theId)
+{
+    StringIntMap::iterator anItr = mIntProperties.find(theId);
+    DBG_ASSERTE(anItr != mIntProperties.end());
+
+    if (anItr != mIntProperties.end())
+        return anItr->second;
+    else
+        return 0;
+}
+
+int SexyAppBase::GetInteger(const std::string& theId, int theDefault)
+{
+    StringIntMap::iterator anItr = mIntProperties.find(theId);
+
+    if (anItr != mIntProperties.end())
+        return anItr->second;
+    else
+        return theDefault;
 }
 
 SexyString SexyAppBase::GetString(const std::string& theId)

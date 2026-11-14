@@ -382,13 +382,25 @@ namespace Sexy
     protected:
 	    void RehupFocus();
         void ClearKeysDown();
+        bool ProcessDeferredMessages(bool singleMessage);
+	    virtual bool Process(bool allowSleep = true);
+	    virtual void UpdateFrames();
+        virtual bool DoUpdateFrames();
+        virtual void DoUpdateFramesF(float theFrac);
 
         virtual void MakeWindow();
         virtual void EnforceCursor();
         virtual void ReInitImages();
-        
+
+        void StartCursorThread();
+
+        void WaitForLoadingThread();
+        void ProcessSafeDeleteList();
         void RestoreScreenResolution();
         void DoExit(int theCode);
+
+
+        void ProcessDemo();
 
     public:
         SexyAppBase();
@@ -397,6 +409,9 @@ namespace Sexy
         // Common overrides:
 	    virtual MusicInterface*	CreateMusicInterface(HWND theHWnd);
         virtual void InitHook();
+        virtual void PreTerminate();
+        virtual void LoadingThreadProc();
+	    virtual void WriteToRegistry();
         virtual void ReadFromRegistry();
         virtual void PreDisplayHook();
 
@@ -431,11 +446,21 @@ namespace Sexy
         virtual void Mute(bool autoMute = false);
         virtual void Unmute(bool autoMute = false);
 
+        // Loading thread methods
+        virtual void			LoadingThreadCompleted();
+        static void				LoadingThreadProcStub(void *theArg);
+
+        void StartLoadingThread();
+
+        virtual bool DrawDirtyStuff();
+
         virtual void InitPropertiesHook();
 
         void SetInteger(const std::string& theId, int theValue);
         void SetString(const std::string& theId, const std::wstring& theValue);
 
+        int GetInteger(const std::string& theId);
+        int GetInteger(const std::string& theId, int theDefault);
         SexyString GetString(const std::string& theId);
         SexyString GetString(const std::string& theId, const SexyString& theDefault);
 
@@ -451,6 +476,9 @@ namespace Sexy
         virtual void SwitchScreenMode(bool wantWindowed);
         virtual void SwitchScreenMode(bool wantWindowed, bool is3d, bool force = false);
 
+        virtual void DoMainLoop();
+        virtual bool UpdateAppStep(bool* updated);
+        virtual bool UpdateApp();
         int InitDDInterface();
         void ClearUpdateBacklog(bool relaxForASecond = false);
         bool IsScreenSaver();
