@@ -15,9 +15,9 @@ namespace Sexy
         std::string mBetaSupportSiteOverride;
         std::string mReferId;
         std::string mVariation;
-        uint mDownloadId;
+        ulong mDownloadId;
         std::string mRegSource;
-        uint mLastVerCheckQueryTime;
+        ulong mLastVerCheckQueryTime;
         bool mSkipAd;
         bool mDontUpdate;
         bool mCheckPartnerSig;
@@ -37,4 +37,6 @@ namespace Sexy
         ~SexyApp();
         virtual void Init();
     };
+
+    extern SexyApp* gSexyApp;
 }
