@@ -191,6 +191,30 @@ void Bej3App::Init()
 {
     SexyApp::Init();
 
+    if (mLogDebugViewToFile)
+        UpdateDebugViewHooks();
+
+    if (!mForcedWebRoot)
+    {
+        mWebRoot = SexyStringToString(GetString("WebRoot", ToSexyString(mWebRoot)));
+    }
+
+    mMaxGamesPerDay = GetInteger("MaxGamesPerDay");
+
+    if (!mBuildUnlocked)
+    {
+        // TODO: Is this an inlined function?
+        if (IsWindow(mDRMComm->mDRMHwnd))
+        {
+            mIsRegistered = SendMessage(mDRMComm->mDRMHwnd, mDRMComm->mQueryMsg, 4, 0) != 0;
+        }
+        else
+        {
+            mDRMComm->mConnected = false;
+            mIsRegistered = false;
+        }
+    }
+
     // TODO: Implement
 }
 
