@@ -110,28 +110,30 @@ Bej3App::Bej3App()
     SetInteger("compat_AppOrigScreenWidth", mOrigScreenWidth);
     SetInteger("compat_AppOrigScreenHeight", mOrigScreenHeight);
 
-    CfgMachineValue artResValue;
-    if (mCompatCfgMachine == nullptr)
-        goto LABEL_35;
-
-    int artRes = 0;
-    if (mCompatCfgMachine->MachineExecuteFunction("GetAppDefaultArtRes", &artResValue))
+    bool artResSet = false;
+    if (mCompatCfgMachine != nullptr)
     {
-        artRes = artResValue.GetInteger();
-    }
-
-    if (artRes > 0)
-    {
-        if (artRes != 1200 && artRes != 768 && artRes != 600)
+        int artRes = 0;
+        CfgMachineValue artResValue;
+        if (mCompatCfgMachine->MachineExecuteFunction("GetAppDefaultArtRes", &artResValue))
         {
-            Popup("Default art resolution must be either 1200, 768, or 600");
+            artRes = artResValue.GetInteger();
         }
 
-        mArtRes = artRes;
+        if (artRes > 0)
+        {
+            if (artRes != 1200 && artRes != 768 && artRes != 600)
+            {
+                Popup("Default art resolution must be either 1200, 768, or 600");
+            }
+
+            mArtRes = artRes;
+            artResSet = true;
+        }
     }
-    else
+
+    if (!artResSet)
     {
-LABEL_35:
         if (physMemTotal < 768 || mOrigScreenHeight < 1200 || vidMemory < 92)
         {
             if (physMemTotal < 256 || mOrigScreenHeight < 600 || vidMemory < 60)
