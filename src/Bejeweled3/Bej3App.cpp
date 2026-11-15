@@ -218,7 +218,7 @@ void Bej3App::Init()
     // TODO: Implement
 }
 
-void Sexy::Bej3App::UpdateDebugViewHooks()
+void Bej3App::UpdateDebugViewHooks()
 {
     // TODO: Implement
 }
