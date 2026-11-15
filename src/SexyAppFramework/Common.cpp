@@ -327,6 +327,16 @@ SexyString Sexy::ToSexyString(const std::wstring& theString)
 	return WStringToSexyString(theString);
 }
 
+std::string Sexy::ToString(const std::string& theString)
+{
+	return theString;
+}
+
+std::string Sexy::ToString(const std::wstring& theString)
+{
+	return WStringToString(theString);
+}
+
 bool Sexy::StringToInt(const std::string theString, int* theIntVal)
 {
 	// TODO: Copied from PopcapFramework 1.3, needs to be verified against decomp

@@ -33,6 +33,8 @@ namespace Sexy
 
         InternetManager();
         virtual ~InternetManager();
+
+        void Init();
     };
 
     enum AdType

@@ -17,6 +17,7 @@
 #include "MusicInterface.h"
 #include "SEHCatcher.h"
 #include "PopLoc.h"
+#include "PropertiesParser.h"
 #include "ResourceManager.h"
 #include "SexyLocale.h"
 #include "WidgetManager.h"
@@ -1518,7 +1519,59 @@ bool SexyAppBase::DrawDirtyStuff()
     return false;
 }
 
+bool SexyAppBase::CheckSignature(const Buffer& theBuffer, const std::string& theFileName)
+{
+    // Add your own signature checking code here
+    return false;
+}
+
+bool SexyAppBase::LoadProperties(const std::string& theFileName, bool required, bool checkSig)
+{
+    Buffer aBuffer;
+    if (!ReadBufferFromFile(theFileName, &aBuffer))
+    {
+        if (!required)
+            return true;
+        else
+        {
+            Popup(GetString("UNABLE_OPEN_PROPERTIES", _S("Unable to open properties file ")) + StringToSexyString(theFileName));
+            return false;
+        }
+    }
+    if (checkSig)
+    {
+        if (!CheckSignature(aBuffer, theFileName))
+        {
+            Popup(GetString("PROPERTIES_SIG_FAILED", _S("Signature check failed on ")) + StringToSexyString(theFileName + "'"));
+            return false;
+        }
+    }
+
+    PropertiesParser aPropertiesParser(this);
+
+    // Load required language-file properties
+    if (!aPropertiesParser.ParsePropertiesBuffer(aBuffer))
+    {
+        Popup(aPropertiesParser.GetErrorText());
+        return false;
+    }
+    else
+        return true;
+}
+
+bool SexyAppBase::LoadProperties()
+{
+    // Load required language-file properties
+    return LoadProperties("properties\\default.xml", true, false);
+}
+
 void SexyAppBase::InitPropertiesHook() {}
+
+bool SexyAppBase::ReadBufferFromFile(const std::string& theFileName, Buffer* theBuffer, bool dontWriteToDemo)
+{
+    // TODO: Implement
+    return false;
+}
 
 void SexyAppBase::SetInteger(const std::string &theId, int theValue)
 {
@@ -1539,6 +1592,27 @@ void SexyAppBase::SetString(const std::string& theId, const std::wstring& theVal
         mPopLoc->SetString(anId, ToSexyString(theValue), false);
 }
 
+bool SexyAppBase::GetBoolean(const std::string& theId)
+{
+    StringBoolMap::iterator anItr = mBoolProperties.find(theId);
+    DBG_ASSERTE(anItr != mBoolProperties.end());
+
+    if (anItr != mBoolProperties.end())
+        return anItr->second;
+    else
+        return false;
+}
+
+bool SexyAppBase::GetBoolean(const std::string& theId, bool theDefault)
+{
+    StringBoolMap::iterator anItr = mBoolProperties.find(theId);
+
+    if (anItr != mBoolProperties.end())
+        return anItr->second;
+    else
+        return theDefault;
+}
+
 int SexyAppBase::GetInteger(const std::string& theId)
 {
     StringIntMap::iterator anItr = mIntProperties.find(theId);
@@ -1555,6 +1629,27 @@ int SexyAppBase::GetInteger(const std::string& theId, int theDefault)
     StringIntMap::iterator anItr = mIntProperties.find(theId);
 
     if (anItr != mIntProperties.end())
+        return anItr->second;
+    else
+        return theDefault;
+}
+
+double SexyAppBase::GetDouble(const std::string& theId)
+{
+    StringDoubleMap::iterator anItr = mDoubleProperties.find(theId);
+    DBG_ASSERTE(anItr != mDoubleProperties.end());
+
+    if (anItr != mDoubleProperties.end())
+        return anItr->second;
+    else
+        return false;
+}
+
+double SexyAppBase::GetDouble(const std::string& theId, double theDefault)
+{
+    StringDoubleMap::iterator anItr = mDoubleProperties.find(theId);
+
+    if (anItr != mDoubleProperties.end())
         return anItr->second;
     else
         return theDefault;

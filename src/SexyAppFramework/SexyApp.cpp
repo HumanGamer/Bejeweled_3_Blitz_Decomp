@@ -100,3 +100,29 @@ void Sexy::SexyApp::Init()
 
     mTimesExecuted++;
 }
+
+void SexyApp::InitPropertiesHook()
+{
+    // Load properties if we need to
+    bool checkSig = !IsScreenSaver();
+    LoadProperties("properties\\partner.xml", false, checkSig);
+
+    // Check to see if this build is unlocked.
+    if (GetBoolean("NoReg", false))
+    {
+        mIsRegistered = true;
+        mBuildUnlocked = true;
+    }
+
+    mProdName = ToString(GetString("ProdName", StringToSexyString(mProdName)));
+
+    if (!mForceFullScreen)
+        mIsWindowed = GetBoolean("DefaultWindowed", mIsWindowed);
+
+    SexyString aNewTitle = GetString("Title", _S(""));
+    if (!aNewTitle.empty())
+        mTitle = aNewTitle + _S(" ") + StringToSexyString(mProductVersion);
+
+    mInternetManager->Init();
+    mBetaSupport = new BetaSupport(this);
+}

@@ -125,6 +125,8 @@ namespace Sexy
     std::wstring		SexyStringToWString(const SexyString& theString);
     SexyString          ToSexyString(const std::string& theString);
     SexyString          ToSexyString(const std::wstring& theString);
+    std::string         ToString(const std::string& theString);
+    std::string         ToString(const std::wstring& theString);
 
     bool StringToInt(const std::string theString, int* theIntVal);
     bool StringToDouble(const std::string theString, double* theDoubleVal);

@@ -12,6 +12,11 @@ InternetManager::~InternetManager()
     // TODO: Implement
 }
 
+void InternetManager::Init()
+{
+    // TODO: Implement
+}
+
 void InternetManager::ParseAdLine(const std::string &line, bool unknown)
 {
     // TODO: Implement

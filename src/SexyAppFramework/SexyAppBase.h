@@ -452,15 +452,25 @@ namespace Sexy
 
         void StartLoadingThread();
 
+        virtual bool CheckSignature(const Buffer& theBuffer, const std::string& theFileName);
         virtual bool DrawDirtyStuff();
 
+        // Properties access methods
+        bool LoadProperties(const std::string& theFileName, bool required, bool checkSig);
+        bool LoadProperties();
         virtual void InitPropertiesHook();
+
+        bool ReadBufferFromFile(const std::string& theFileName, Buffer* theBuffer, bool dontWriteToDemo = false);//UNICODE
 
         void SetInteger(const std::string& theId, int theValue);
         void SetString(const std::string& theId, const std::wstring& theValue);
 
+        bool GetBoolean(const std::string& theId);
+        bool GetBoolean(const std::string& theId, bool theDefault);
         int GetInteger(const std::string& theId);
         int GetInteger(const std::string& theId, int theDefault);
+        double GetDouble(const std::string& theId);
+        double GetDouble(const std::string& theId, double theDefault);
         SexyString GetString(const std::string& theId);
         SexyString GetString(const std::string& theId, const SexyString& theDefault);
 

@@ -35,7 +35,9 @@ namespace Sexy
     public:
         SexyApp();
         ~SexyApp();
-        virtual void Init();
+
+        void Init() override;
+        void InitPropertiesHook() override;
     };
 
     extern SexyApp* gSexyApp;

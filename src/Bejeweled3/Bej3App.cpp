@@ -198,7 +198,7 @@ void Bej3App::Init()
 
     if (!mForcedWebRoot)
     {
-        mWebRoot = SexyStringToString(GetString("WebRoot", ToSexyString(mWebRoot)));
+        mWebRoot = ToString(GetString("WebRoot", ToSexyString(mWebRoot)));
     }
 
     mMaxGamesPerDay = GetInteger("MaxGamesPerDay");

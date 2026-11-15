@@ -53,6 +53,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     PopLoc.h
     SharedRenderTarget.cpp
     SharedRenderTarget.h
+    PropertiesParser.cpp
+    PropertiesParser.h
+    XMLParser.cpp
+    XMLParser.h
     CfgMachine.cpp
     CfgMachine.h
     D3DTester.cpp

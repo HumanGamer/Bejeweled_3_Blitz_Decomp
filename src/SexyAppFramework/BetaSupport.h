@@ -38,7 +38,7 @@ namespace Sexy
         std::map<std::string, BetaSupport::DataLogEntry> mDataLogs;
 
     public:
-        BetaSupport();
+        BetaSupport(SexyApp* theApp);
         virtual ~BetaSupport();
     };
 }
