@@ -11,6 +11,8 @@ namespace Sexy
         SoundManager() {}
         virtual ~SoundManager() {}
 
+        virtual void StopAllSounds() = 0;
+
         // TODO: Implement
     };
 }

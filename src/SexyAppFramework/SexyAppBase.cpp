@@ -15,6 +15,7 @@
 #include "DSoundManager.h"
 #include "FModMusicInterface.h"
 #include "MusicInterface.h"
+#include "PerfTimer.h"
 #include "SEHCatcher.h"
 #include "PopLoc.h"
 #include "PropertiesParser.h"
@@ -929,6 +930,11 @@ void SexyAppBase::SetCursor(int theCursorNum)
     EnforceCursor();
 }
 
+void SexyAppBase::CleanSharedImages()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::RehupFocus()
 {
     // TODO: Implement
@@ -954,26 +960,360 @@ bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
     return false;
 }
 
+void SexyAppBase::UpdateFTimeAcc()
+{
+    DWORD aCurTime = timeGetTime();
+
+    if (mLastTimeCheck != 0)
+    {
+        int aDeltaTime = aCurTime - mLastTimeCheck;
+
+        mUpdateFTimeAcc = min(mUpdateFTimeAcc + aDeltaTime, mMaxUpdateBacklog);
+
+        if (mRelaxUpdateBacklogCount > 0)
+            mRelaxUpdateBacklogCount = max(mRelaxUpdateBacklogCount - aDeltaTime, 0);
+    }
+
+    mLastTimeCheck = aCurTime;
+}
+
 bool SexyAppBase::Process(bool allowSleep)
 {
-    // TODO: Implement
-    return false;
+    if (mLoadingFailed)
+        Shutdown();
+
+    bool isVSynched = !mPlayingDemoBuffer && mVSyncUpdates && !mLastDrawWasEmpty && !mVSyncBroken &&
+        (!mIsPhysWindowed || (mIsPhysWindowed && mWaitForVSync && !mSoftVSyncWait));
+    double aFrameFTime;
+    double anUpdatesPerUpdateF;
+
+    if (mVSyncUpdates)
+    {
+        aFrameFTime = (1000.0 / mSyncRefreshRate) / mUpdateMultiplier;
+        anUpdatesPerUpdateF = (float) (1000.0 / (mFrameTime * mSyncRefreshRate));
+    }
+    else
+    {
+        aFrameFTime = mFrameTime / mUpdateMultiplier;
+        anUpdatesPerUpdateF = 1.0;
+    }
+
+    // Do we need to fast forward?
+    if (mPlayingDemoBuffer)
+    {
+        if (mUpdateCount < mFastForwardToUpdateNum || mFastForwardToMarker)
+        {
+            if (!mDemoMute && !mFastForwardStep)
+            {
+                mDemoMute = true;
+                Mute(true);
+            }
+
+            static DWORD aTick = GetTickCount();
+            while (mUpdateCount < mFastForwardToUpdateNum || mFastForwardToMarker)
+            {
+                ClearUpdateBacklog();
+                int aLastUpdateCount = mUpdateCount;
+
+                // Actual updating code below
+                //////////////////////////////////////////////////////////////////////////
+
+                bool hadRealUpdate = DoUpdateFrames();
+
+                if (hadRealUpdate)
+                {
+                    mPendingUpdatesAcc += anUpdatesPerUpdateF;
+                    mPendingUpdatesAcc -= 1.0;
+                    ProcessSafeDeleteList();
+
+                    // Process any extra updates
+                    while (mPendingUpdatesAcc >= 1.0)
+                    {
+                        // These should just be IDLE commands we have to clear out
+                        ProcessDemo();
+
+                        bool hasRealUpdate = DoUpdateFrames();
+                        DBG_ASSERTE(hasRealUpdate);
+
+                        if (!hasRealUpdate)
+                            break;
+
+                        ProcessSafeDeleteList();
+                        mPendingUpdatesAcc -= 1.0;
+                    }
+
+                    DoUpdateFramesF((float) anUpdatesPerUpdateF);
+                    ProcessSafeDeleteList();
+                }
+
+                //////////////////////////////////////////////////////////////////////////
+
+                // If the update count doesn't change, its because we are
+                //  playing back a demo and need to read more
+                if (aLastUpdateCount == mUpdateCount)
+                    return true;
+
+                DWORD aNewTick = GetTickCount();
+                if (aNewTick - aTick >= 1000 || mFastForwardStep) // let the app draw some
+                {
+                    mFastForwardStep = false;
+                    aTick = GetTickCount();
+                    DrawDirtyStuff();
+                    return true;
+                }
+            }
+        }
+
+        if (mDemoMute)
+        {
+            mDemoMute = false;
+            mSoundManager->StopAllSounds();
+            Unmute(true);
+        }
+    }
+
+    // Make sure we're not paused
+    if (!mPaused && mUpdateMultiplier > 0)
+    {
+        ulong aStartTime = timeGetTime();
+
+        ulong aCurTime = aStartTime;
+        int aCumSleepTime = 0;
+
+        // When we are VSynching, only calculate this FTimeAcc right after drawing
+
+        if (!isVSynched)
+            UpdateFTimeAcc();
+
+        // mNonDrawCount is used to make sure we draw the screen at least
+        // 10 times per second, even if it means we have to slow down
+        // the updates to make it draw 10 times per second in "game time"
+
+        bool didUpdate = false;
+
+        if (mUpdateAppState == UPDATESTATE_PROCESS_1)
+		{
+			if (++mNonDrawCount < (int) ceil(mMaxNonDrawCount * mUpdateMultiplier) || !mLoaded)
+			{
+				bool doUpdate = false;
+
+				if (isVSynched)
+				{
+					// Synch'ed to vertical refresh, so update as soon as possible after draw
+					doUpdate = (!mHasPendingDraw) || (mUpdateFTimeAcc >= (int) (aFrameFTime * 0.75));
+				}
+				else if (mUpdateFTimeAcc >= aFrameFTime)
+				{
+					doUpdate = true;
+				}
+
+				if (doUpdate)
+				{
+					// Do VSyncBroken test.  This test fails if we're in fullscreen and
+					// "don't vsync" has been forced in Advanced settings up Display Properties
+					if ((!mPlayingDemoBuffer) && (mUpdateMultiplier == 1.0))
+					{
+						mVSyncBrokenTestUpdates++;
+						if (mVSyncBrokenTestUpdates >= (DWORD) ((1000+mFrameTime-1)/mFrameTime))
+						{
+							// It has to be running 33% fast to be "broken" (25% = 1/0.800)
+							if (aStartTime - mVSyncBrokenTestStartTick <= 800)
+							{
+								// The test has to fail 3 times in a row before we decide that
+								//  vsync is broken overall
+								mVSyncBrokenCount++;
+								if (mVSyncBrokenCount >= 3)
+									mVSyncBroken = true;
+							}
+							else
+								mVSyncBrokenCount = 0;
+
+							mVSyncBrokenTestStartTick = aStartTime;
+							mVSyncBrokenTestUpdates = 0;
+						}
+					}
+
+					bool hadRealUpdate = DoUpdateFrames();
+					if (hadRealUpdate)
+						mUpdateAppState = UPDATESTATE_PROCESS_2;
+
+					mHasPendingDraw = true;
+					didUpdate = true;
+				}
+			}
+		}
+		else if (mUpdateAppState == UPDATESTATE_PROCESS_2)
+		{
+			mUpdateAppState = UPDATESTATE_PROCESS_DONE;
+
+			mPendingUpdatesAcc += anUpdatesPerUpdateF;
+			mPendingUpdatesAcc -= 1.0;
+			ProcessSafeDeleteList();
+
+			// Process any extra updates
+			while (mPendingUpdatesAcc >= 1.0)
+			{
+				// These should just be IDLE commands we have to clear out
+				ProcessDemo();
+
+				++mNonDrawCount;
+				bool hasRealUpdate = DoUpdateFrames();
+				DBG_ASSERTE(hasRealUpdate);
+
+				if (!hasRealUpdate)
+					break;
+
+				ProcessSafeDeleteList();
+				mPendingUpdatesAcc -= 1.0;
+			}
+
+			//aNumCalls++;
+			DoUpdateFramesF((float) anUpdatesPerUpdateF);
+			ProcessSafeDeleteList();
+
+			// Don't let mUpdateFTimeAcc dip below 0
+			//  Subtract an extra 0.2ms, because sometimes refresh rates have some
+			//  fractional component that gets truncated, and it's better to take off
+			//  too much to keep our timing tending toward occurring right after
+			//  redraws
+			if (isVSynched)
+				mUpdateFTimeAcc = max(mUpdateFTimeAcc - aFrameFTime - 0.2f, 0.0);
+			else
+				mUpdateFTimeAcc -= aFrameFTime;
+
+			if (mRelaxUpdateBacklogCount > 0)
+				mUpdateFTimeAcc = 0;
+
+			didUpdate = true;
+		}
+
+		if (!didUpdate)
+		{
+			mUpdateAppState = UPDATESTATE_PROCESS_DONE;
+
+			mNonDrawCount = 0;
+
+			if (mHasPendingDraw)
+			{
+				DrawDirtyStuff();
+			}
+			else
+			{
+				// Let us take into account the time it took to draw dirty stuff
+				int aTimeToNextFrame = (int) (aFrameFTime - mUpdateFTimeAcc);
+				if (aTimeToNextFrame > 0)
+				{
+					if (!allowSleep)
+						return false;
+
+					// Wait till next processing cycle
+					++mSleepCount;
+					Sleep(aTimeToNextFrame);
+
+					aCumSleepTime += aTimeToNextFrame;
+				}
+			}
+		}
+
+		if (mYieldMainThread)
+		{
+			// This is to make sure that the title screen doesn't take up any more than
+			// 1/3 of the processor time
+
+			ulong anEndTime = timeGetTime();
+			int anElapsedTime = (anEndTime - aStartTime) - aCumSleepTime;
+			int aLoadingYieldSleepTime = min(250, (anElapsedTime * 2) - aCumSleepTime);
+
+			if (aLoadingYieldSleepTime >= 0)
+			{
+				if (!allowSleep)
+					return false;
+
+				Sleep(aLoadingYieldSleepTime);
+			}
+		}
+    }
+
+    ProcessSafeDeleteList();
+    return true;
 }
 
 void SexyAppBase::UpdateFrames()
 {
-    // TODO: Implement
+    mUpdateCount++;
+
+    if (!mMinimized)
+    {
+        PerfTimer perfTimer;
+        if (mShowFPS && mShowFPSMode <= FPS_ShowCoords)
+            perfTimer.Start();
+
+        if (mWidgetManager->UpdateFrame())
+            ++mFPSDirtyCount;
+
+        if (mShowFPS && mShowFPSMode <= FPS_ShowCoords)
+        {
+            mVFPSUpdateCount++;
+            mVFPSUpdateTimes += perfTimer.GetDuration();
+        }
+    }
+
+    mMusicInterface->Update();
+    CleanSharedImages();
 }
 
 void SexyAppBase::DoUpdateFramesF(float theFrac)
 {
-    // TODO: Implement
+    if (mVSyncUpdates && !mMinimized)
+        mWidgetManager->UpdateFrameF(theFrac);
 }
 
 bool SexyAppBase::DoUpdateFrames()
 {
-    // TODO: Implement
-    return false;
+    SEXY_AUTO_PERF("SexyAppBase::DoUpdateFrames");
+
+    if (gScreenSaverActive)
+        return false;
+
+    if (mPlayingDemoBuffer)
+    {
+        if (mLoadingThreadCompleted && !mLoaded && mDemoLoadingComplete)
+        {
+            mLoaded = true;
+            SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+            mYieldMainThread = false;
+            LoadingThreadCompleted();
+        }
+
+		// Hrrm not sure why we check (mUpdateCount != mLastDemoUpdateCnt) here
+		if (mLoaded != mDemoLoadingComplete || mUpdateCount != mLastDemoUpdateCnt)
+		{
+		    UpdateFrames();
+		    return true;
+		}
+
+        return true;
+    }
+    else
+    {
+        if (mLoadingThreadCompleted && !mLoaded)
+        {
+            SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+            mLoaded = true;
+            mYieldMainThread = false;
+            LoadingThreadCompleted();
+
+            if (mRecordingDemoBuffer)
+            {
+                WriteDemoTimingBlock();
+                mDemoBuffer.WriteNumBits(0, 1);
+                mDemoBuffer.WriteNumBits(DEMO_LOADING_COMPLETE, 5);
+            }
+        }
+
+        UpdateFrames();
+        return true;
+    }
 }
 
 void SexyAppBase::BeginPopup()
@@ -1686,6 +2026,11 @@ bool SexyAppBase::PrepareDemoCommand(bool required)
 {
     // TODO: Implement
     return false;
+}
+
+void SexyAppBase::WriteDemoTimingBlock()
+{
+    // TODO: Implement
 }
 
 bool SexyAppBase::ReadDemoBuffer(std::string &theError)

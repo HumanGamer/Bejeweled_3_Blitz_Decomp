@@ -4,3 +4,5 @@ using namespace Sexy;
 
 MusicInterface::MusicInterface() = default;
 MusicInterface::~MusicInterface() = default;
+
+void MusicInterface::Update() {}

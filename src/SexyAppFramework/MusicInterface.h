@@ -11,5 +11,7 @@ namespace Sexy
         virtual ~MusicInterface();
 
         // TODO: Implement
+
+	    virtual void Update();
     };
 }

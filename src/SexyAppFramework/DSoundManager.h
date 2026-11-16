@@ -14,6 +14,8 @@ namespace Sexy
         DSoundManager(HWND theHWnd, bool haveFMod);
         virtual ~DSoundManager();
 
+        void StopAllSounds() override;
+
         // TODO: Implement
     };
 }

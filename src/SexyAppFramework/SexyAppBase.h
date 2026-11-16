@@ -383,6 +383,7 @@ namespace Sexy
 	    void RehupFocus();
         void ClearKeysDown();
         bool ProcessDeferredMessages(bool singleMessage);
+        void UpdateFTimeAcc();
 	    virtual bool Process(bool allowSleep = true);
 	    virtual void UpdateFrames();
         virtual bool DoUpdateFrames();
@@ -428,6 +429,7 @@ namespace Sexy
 
         void SetCursor(int theCursorNum);
 
+        void CleanSharedImages();
 
         virtual void BeginPopup();
         virtual void EndPopup();
@@ -476,7 +478,9 @@ namespace Sexy
 
         bool RegistryReadBoolean(const std::string& theValueName, bool* theValue);
 
+        // Demo access methods
         bool PrepareDemoCommand(bool required);
+        void WriteDemoTimingBlock();
 	    bool ReadDemoBuffer(std::string &theError);//UNICODE
 
         bool Is3DAccelerated();

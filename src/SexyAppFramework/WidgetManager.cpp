@@ -21,3 +21,15 @@ void WidgetManager::DoMouseUps()
 {
     // TODO: Implement
 }
+
+bool WidgetManager::UpdateFrame()
+{
+    // TODO: Implement
+    return false;
+}
+
+bool WidgetManager::UpdateFrameF(float theFrac)
+{
+    // TODO: Implement
+    return false;
+}

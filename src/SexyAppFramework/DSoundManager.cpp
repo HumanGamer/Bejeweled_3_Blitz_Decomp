@@ -11,3 +11,8 @@ DSoundManager::~DSoundManager()
 {
     // TODO: Implement
 }
+
+void DSoundManager::StopAllSounds()
+{
+    // TODO: Implement
+}

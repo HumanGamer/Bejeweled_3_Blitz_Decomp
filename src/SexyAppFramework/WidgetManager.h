@@ -43,5 +43,8 @@ namespace Sexy
         void Resize(const Rect& theMouseDestRect, const Rect& theMouseSourceRect);
 
         void DoMouseUps();
+
+        bool UpdateFrame();
+        bool UpdateFrameF(float theFrac);
     };
 }

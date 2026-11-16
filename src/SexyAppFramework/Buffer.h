@@ -20,6 +20,10 @@ namespace Sexy
 
         // TODO: Implement
 
+        void WriteNumBits(int theNum, int theBits);
+
+        // TODO: Implement
+
         uchar ReadByte() const;
         bool ReadBoolean() const;
     };
