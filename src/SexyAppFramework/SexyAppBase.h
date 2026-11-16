@@ -417,6 +417,7 @@ namespace Sexy
         virtual void PreDisplayHook();
 
         virtual void HandleGameAlreadyRunning();
+	    virtual void HandleNotifyGameMessage(int theType, int theParam); // for HWND_BROADCAST of mNotifyGameMessage (0-1000 are reserved for SexyAppBase for theType)
 
         virtual void Start();
         virtual void Init();
@@ -456,6 +457,7 @@ namespace Sexy
 
         virtual bool CheckSignature(const Buffer& theBuffer, const std::string& theFileName);
         virtual bool DrawDirtyStuff();
+        virtual void Redraw(Rect* theClipRect);
 
         // Properties access methods
         bool LoadProperties(const std::string& theFileName, bool required, bool checkSig);
@@ -490,12 +492,15 @@ namespace Sexy
         virtual void SwitchScreenMode(bool wantWindowed);
         virtual void SwitchScreenMode(bool wantWindowed, bool is3d, bool force = false);
 
+        virtual bool IsAltKeyUsed(WPARAM wParam);
+
         virtual void DoMainLoop();
         virtual bool UpdateAppStep(bool* updated);
         virtual bool UpdateApp();
         int InitDDInterface();
         void ClearUpdateBacklog(bool relaxForASecond = false);
         bool IsScreenSaver();
+	    virtual bool AppCanRestore();
 
 	    static LRESULT CALLBACK	WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     };

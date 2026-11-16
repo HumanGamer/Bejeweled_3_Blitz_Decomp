@@ -706,6 +706,37 @@ void SexyAppBase::HandleGameAlreadyRunning()
     }
 }
 
+void SexyAppBase::HandleNotifyGameMessage(int theType, int theParam)
+{
+    if (theType==0) // bring to front message
+    {
+        WINDOWPLACEMENT aWindowPlacement;
+        aWindowPlacement.length = sizeof(WINDOWPLACEMENT);
+        GetWindowPlacement(mHWnd, &aWindowPlacement);
+
+        if (aWindowPlacement.showCmd == SW_SHOWMINIMIZED)
+            ShowWindow(mHWnd, SW_RESTORE);
+
+        ::SetForegroundWindow(mHWnd);
+    }
+}
+
+bool SexyAppBase::IsAltKeyUsed(WPARAM wParam)
+{
+
+    int aChar = tolower(wParam);
+    switch (aChar)
+    {
+        case '\r': // alt-enter
+        case 'a':
+        case 'r':
+        case 's':
+            return true;
+        default:
+            return false;
+    }
+}
+
 void SexyAppBase::DoMainLoop()
 {
     while (!mShutdown)
@@ -1859,6 +1890,11 @@ bool SexyAppBase::DrawDirtyStuff()
     return false;
 }
 
+void SexyAppBase::Redraw(Rect *theClipRect)
+{
+    // TODO: Implement
+}
+
 bool SexyAppBase::CheckSignature(const Buffer& theBuffer, const std::string& theFileName)
 {
     // Add your own signature checking code here
@@ -2082,6 +2118,11 @@ void SexyAppBase::ClearUpdateBacklog(bool relaxForASecond)
 bool SexyAppBase::IsScreenSaver()
 {
     return mIsScreenSaver;
+}
+
+bool SexyAppBase::AppCanRestore()
+{
+    return !mIsDisabled;
 }
 
 static bool ScreenSaverWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT &theResult)
