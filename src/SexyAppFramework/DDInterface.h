@@ -93,6 +93,8 @@ namespace Sexy
 	    static std::string ResultToString(int theResult);
 
         DDImage* GetScreenImage();
+
+	    bool SetCursorImage(Image* theImage);
     };
 
     extern bool gIs3D;

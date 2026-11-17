@@ -1586,6 +1586,8 @@ void SexyAppBase::MakeWindow()
             {
                 width = height * Ratio(mWidth, mHeight);
             }
+
+            aWindowStyle |= WS_THICKFRAME;
         }
 
         RECT aRect;
@@ -1842,7 +1844,97 @@ void SexyAppBase::MakeWindow()
 
 void SexyAppBase::EnforceCursor()
 {
-    // TODO: Implement
+    if (mIsSizeCursor)
+        return;
+
+    bool wantSysCursor = true;
+
+    if (mDDInterface == nullptr)
+        return;
+
+    if (mSEHOccured || !mMouseIn)
+    {
+        ::SetCursor(LoadCursor(nullptr, IDC_ARROW));
+        if (mDDInterface->SetCursorImage(nullptr))
+            mCustomCursorDirty = true;
+    }
+    else
+    {
+        if (mCursorImages[mCursorNum] == nullptr ||
+            (!mPlayingDemoBuffer && !mCustomCursorsEnabled && mCursorNum != CURSOR_CUSTOM))
+        {
+            if (mOverrideCursor != nullptr)
+                ::SetCursor(mOverrideCursor);
+            else if (mCursorNum == CURSOR_POINTER)
+                ::SetCursor(::LoadCursor(nullptr, IDC_ARROW));
+            else if (mCursorNum == CURSOR_HAND)
+                ::SetCursor(mHandCursor);
+            else if (mCursorNum == CURSOR_TEXT)
+                ::SetCursor(::LoadCursor(nullptr, IDC_IBEAM));
+            else if (mCursorNum == CURSOR_DRAGGING)
+                ::SetCursor(mDraggingCursor);
+            else if (mCursorNum == CURSOR_CIRCLE_SLASH)
+                ::SetCursor(::LoadCursor(nullptr, IDC_NO));
+            else if (mCursorNum == CURSOR_SIZEALL)
+                ::SetCursor(::LoadCursor(nullptr, IDC_SIZEALL));
+            else if (mCursorNum == CURSOR_SIZENESW)
+                ::SetCursor(::LoadCursor(nullptr, IDC_SIZENESW));
+            else if (mCursorNum == CURSOR_SIZENS)
+                ::SetCursor(::LoadCursor(nullptr, IDC_SIZENS));
+            else if (mCursorNum == CURSOR_SIZENWSE)
+                ::SetCursor(::LoadCursor(nullptr, IDC_SIZENWSE));
+            else if (mCursorNum == CURSOR_SIZEWE)
+                ::SetCursor(::LoadCursor(nullptr, IDC_SIZEWE));
+            else if (mCursorNum == CURSOR_WAIT)
+                ::SetCursor(::LoadCursor(nullptr, IDC_WAIT));
+            else if (mCursorNum == CURSOR_CUSTOM)
+                ::SetCursor(nullptr); // Default to not showing anything
+            else if (mCursorNum == CURSOR_NONE)
+                ::SetCursor(nullptr);
+            else
+                ::SetCursor(::LoadCursor(nullptr, IDC_ARROW));
+
+            if (mDDInterface->SetCursorImage(nullptr))
+                mCustomCursorDirty = true;
+        }
+        else
+        {
+            if (mDDInterface->SetCursorImage(mCursorImages[mCursorNum]))
+                mCustomCursorDirty = true;
+
+            if (!mPlayingDemoBuffer)
+            {
+                ::SetCursor(nullptr);
+            }
+            else
+            {
+                // Give the NO cursor in the client area and an arrow on the title bar
+                POINT aULCorner = {0, 0};
+                ::ClientToScreen(mHWnd, &aULCorner);
+
+                POINT aBRCorner = {mWidth, mHeight};
+                ::ClientToScreen(mHWnd, &aBRCorner);
+
+                POINT aPoint;
+                ::GetCursorPos(&aPoint);
+
+                if ((aPoint.x >= aULCorner.x) && (aPoint.y >= aULCorner.y) &&
+                    (aPoint.x < aBRCorner.x) && (aPoint.y < aBRCorner.y))
+                {
+                    ::SetCursor(::LoadCursor(nullptr, IDC_NO));
+                }
+                else
+                {
+                    ::SetCursor(::LoadCursor(nullptr, IDC_ARROW));
+                }
+            }
+
+            wantSysCursor = false;
+        }
+    }
+
+    if (wantSysCursor != mSysCursor)
+        mSysCursor = wantSysCursor;
 }
 
 void SexyAppBase::ReInitImages()

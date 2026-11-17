@@ -55,3 +55,9 @@ DDImage *DDInterface::GetScreenImage()
 {
     return mScreenImage;
 }
+
+bool DDInterface::SetCursorImage(Image *theImage)
+{
+    // TODO: Implement
+    return false;
+}
