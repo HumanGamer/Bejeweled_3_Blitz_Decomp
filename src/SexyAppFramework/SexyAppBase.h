@@ -493,6 +493,9 @@ namespace Sexy
         virtual void SwitchScreenMode(bool wantWindowed, bool is3d, bool force = false);
 
         virtual bool IsAltKeyUsed(WPARAM wParam);
+        virtual bool DebugKeyDown(int theKey);
+        virtual bool DebugKeyDownAsync(int theKey, bool ctrlDown, bool altDown);
+        virtual void CloseRequestAsync();
 
         virtual void DoMainLoop();
         virtual bool UpdateAppStep(bool* updated);

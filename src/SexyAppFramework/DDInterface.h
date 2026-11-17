@@ -66,9 +66,15 @@ namespace Sexy
         DWORD mRefreshRate;
         DWORD mMillisecondsPerFrame;
         int mScanLineFailCount;
-
-        // TODO: Implement
-
+        int* mRedAddTable;
+        int* mGreenAddTable;
+        int* mBlueAddTable;
+        uint mRedConvTable[256];
+        uint mGreenConvTable[256];
+        uint mBlueConvTable[256];
+        bool mInitialized;
+        HWND mHWnd;
+        bool mIsWindowed;
         DDImage* mScreenImage;
         DDImage* mSecondarySurfaceImage;
 
@@ -82,8 +88,12 @@ namespace Sexy
         DDInterface(SexyAppBase* theApp);
         virtual ~DDInterface();
 
+        void WindowResize(int width, int height);
+
 	    static std::string ResultToString(int theResult);
 
         DDImage* GetScreenImage();
     };
+
+    extern bool gIs3D;
 }

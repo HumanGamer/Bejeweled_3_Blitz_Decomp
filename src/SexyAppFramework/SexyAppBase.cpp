@@ -737,6 +737,19 @@ bool SexyAppBase::IsAltKeyUsed(WPARAM wParam)
     }
 }
 
+bool SexyAppBase::DebugKeyDown(int theKey)
+{
+    // TODO: Implement
+    return false;
+}
+
+bool SexyAppBase::DebugKeyDownAsync(int theKey, bool ctrlDown, bool altDown)
+{
+    return false;
+}
+
+void SexyAppBase::CloseRequestAsync() {}
+
 void SexyAppBase::DoMainLoop()
 {
     while (!mShutdown)
@@ -2125,6 +2138,24 @@ bool SexyAppBase::AppCanRestore()
     return !mIsDisabled;
 }
 
+static int DemoJumpToTime()
+{
+    // TODO: Implement
+    return 0;
+}
+
+static int ListDemoMarkers()
+{
+    // TODO: Implement
+    return 0;
+}
+
+static void ToggleDemoSoundVolume()
+{
+    // TODO: Implement
+}
+
+static DWORD gPowerSaveTick = 0;
 static bool ScreenSaverWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT &theResult)
 {
     // TODO: Implement
@@ -2142,10 +2173,604 @@ LRESULT CALLBACK SexyAppBase::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
     SexyAppBase* aSexyApp = (SexyAppBase*) GetWindowLong(hWnd, GWL_USERDATA);
 
-    // TODO: Implement
+    bool v9;
+    WPARAM v10;
+    if (uMsg > WM_SYSKEYUP)
+    {
+        if (uMsg > WM_MBUTTONUP)
+        {
+            if (uMsg != WM_MOUSEWHEEL && uMsg != WM_SIZING)
+            {
+                if (uMsg == WM_POWERBROADCAST && wParam <= 1)
+                {
+                    if (aSexyApp != nullptr)
+                    {
+                        if (!aSexyApp->mAllowMonitorPowersave || !aSexyApp->mLoaded || !aSexyApp->mIsPhysWindowed)
+                            return BROADCAST_QUERY_DENY;
+                        goto LABEL_12;
+                    }
+                    goto LABEL_201;
+                }
+                goto LABEL_12;
+            }
+        }
+        else if (uMsg < WM_MOUSEMOVE)
+        {
+            if (uMsg == WM_SYSCHAR)
+            {
+                if (aSexyApp != nullptr)
+                {
+                    if (aSexyApp->IsAltKeyUsed(wParam))
+                        return 0;
+                    goto LABEL_12;
+                }
+                goto LABEL_201;
+            }
 
-    if (gSexyAppBase->mIsWideWindow)
-        return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-    else
-        return DefWindowProcA(hWnd, uMsg, wParam, lParam);
+            if (uMsg == WM_SYSCOMMAND)
+            {
+                WPARAM newWParam = wParam & 0xFFF0;
+                if (newWParam != SC_MONITORPOWER
+                    || (gPowerSaveTick = GetTickCount(), aSexyApp == nullptr)
+                    || aSexyApp->mAllowMonitorPowersave && aSexyApp->mLoaded)
+                {
+                    if (newWParam != SC_SCREENSAVE)
+                        goto LABEL_12;
+                    if (aSexyApp != nullptr)
+                    {
+                        if (!aSexyApp->mLoaded || !aSexyApp->mIsPhysWindowed)
+                            return 0;
+                        goto LABEL_12;
+                    }
+                    goto LABEL_201;
+                }
+                return 0;
+            }
+            if (uMsg != WM_TIMER)
+                goto LABEL_12;
+        }
+
+LABEL_34:
+        if (aSexyApp == nullptr)
+            goto LABEL_201;
+        if (aSexyApp->mNoDefer)
+            goto LABEL_12;
+        if (uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN)
+        {
+            v9 = true;
+        }
+        else
+        {
+            v9 = false;
+            if (uMsg != WM_KEYUP && uMsg != WM_SYSKEYUP)
+            {
+                v10 = wParam;
+                goto LABEL_106;
+            }
+        }
+
+        v10 = wParam;
+        if (wParam == VK_CONTROL)
+        {
+            aSexyApp->mCtrlDown = v9;
+        }
+        else if (wParam == VK_MENU)
+        {
+            aSexyApp->mAltDown = v9;
+        }
+
+        if (v9 && aSexyApp->DebugKeyDownAsync(wParam, aSexyApp->mCtrlDown, aSexyApp->mAltDown))
+        {
+            return 0;
+        }
+
+LABEL_106:
+        if (aSexyApp->mPlayingDemoBuffer)
+        {
+            if (uMsg == WM_CHAR)
+            {
+                int v25;
+                int v26;
+                switch (v10)
+                {
+                    case '+':
+                        aSexyApp->mUpdateMultiplier *= 1.5;
+                        break;
+                    case '-':
+                        aSexyApp->mUpdateMultiplier /= 1.5;
+                        break;
+                    case '0':
+                        aSexyApp->mFastForwardToUpdateNum = aSexyApp->mDemoLength;
+                        break;
+                    case '4':
+                        v25 = 120000;
+                        goto LABEL_119;
+                    case '5':
+                        v26 = 90000;
+                        goto LABEL_121;
+                    case '6':
+                        v25 = 60000;
+                        goto LABEL_119;
+                    case '7':
+                        v26 = 30000;
+                        goto LABEL_121;
+                    case '8':
+                        v25 = 10000;
+LABEL_119:
+                        aSexyApp->mFastForwardToUpdateNum = aSexyApp->mDemoLength - v25 / aSexyApp->mFrameTime;
+                        break;
+                    case '9':
+                        v26 = 5000;
+LABEL_121:
+                        aSexyApp->mFastForwardToUpdateNum = aSexyApp->mDemoLength - v26 / aSexyApp->mFrameTime;
+                        break;
+                    case '=':
+                        aSexyApp->mUpdateMultiplier = 1.0;
+                        break;
+                    case 'J':
+                    case 'j':
+                        DemoJumpToTime();
+                        break;
+                    case 'L':
+                    case 'l':
+                        ListDemoMarkers();
+                        break;
+                    case 'M':
+                    case 'm':
+                        aSexyApp->mFastForwardToMarker = true;
+                        break;
+                    case 'N':
+                    case 'n':
+                        aSexyApp->mFastForwardToUpdateNum = aSexyApp->mUpdateCount + 1;
+                        aSexyApp->mFastForwardStep = true;
+                        break;
+                    case 'P':
+                    case 'p':
+                        aSexyApp->mPaused = !aSexyApp->mPaused;
+                        aSexyApp->mUpdateFTimeAcc = 0.0;
+                        aSexyApp->mLastTimeCheck = timeGetTime();
+                        break;
+                    case 'S':
+                    case 's':
+                        ToggleDemoSoundVolume();
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else if (uMsg == WM_KEYDOWN)
+            {
+                aSexyApp->DebugKeyDown(v10);
+            }
+        }
+
+        bool pushMessage = true;
+        if (!aSexyApp->mDeferredMessages.empty())
+        {
+            // Don't add any more messages after WM_CLOSE
+            MSG* aMsg = &aSexyApp->mDeferredMessages.back();
+
+            if (aMsg->message == WM_CLOSE)
+                pushMessage = false;
+            if (uMsg == WM_TIMER && uMsg == aMsg->message)
+                goto LABEL_12;
+            if (!pushMessage)
+            {
+LABEL_153:
+                if (uMsg == WM_WINDOWPOSCHANGING)
+                {
+                    RECT winRect;
+                    RECT clientRect;
+                    GetWindowRect(hWnd, &winRect);
+                    GetClientRect(hWnd, &clientRect);
+                    LPWINDOWPOS winPos = (LPWINDOWPOS) lParam;
+                    int winPosLeft = winPos->x;
+                    int winPosTop = winPos->y;
+                    int winPosRight = winPosLeft + winPos->cx;
+                    int winPosBottom = winPosTop + winPos->cy;
+                    int winWidth = winPosRight - winPosLeft;
+                    int winHeight = winPosBottom - winPosTop;
+                    int winPosX = winPosLeft;
+                    int winPosY = winPosTop;
+                    double double1 = (double)(winRect.right - winRect.left) / (double)(winRect.bottom - winRect.top);
+                    double double2 = (double)(winPosRight - winPosLeft) / (double)(winPosBottom - winPosTop);
+
+                    Rect rect1;
+                    rect1.mX = 0;
+                    rect1.mY = 0;
+                    rect1.mWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                    rect1.mHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+                    Rect rect2;
+                    rect2.mX = winRect.left;
+                    rect2.mY = winRect.top;
+                    rect2.mHeight = winRect.bottom - winRect.top;
+                    rect2.mWidth = winRect.right - winRect.left;
+
+                    bool intersects = false;
+                    if (rect1.Intersects(rect2))
+                    {
+                        rect2.mX = winPosX;
+                        rect2.mWidth = winWidth;
+                        rect2.mHeight = winHeight;
+                        rect2.mY = winPosY;
+                        if (rect1.Intersects(rect2))
+                            intersects = true;
+                    }
+
+                    double double3 = double1 - double2;
+                    double double4 = fabs(double3);
+                    if (double4 > 0.01f && intersects)
+                    {
+                        int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+                        int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+                        int virtualScreenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+                        Ratio ratio;
+                        if (aSexyApp->mEnableWindowAspect)
+                            ratio = aSexyApp->mWindowAspect;
+                        else
+                            ratio.Set(aSexyApp->mWidth, aSexyApp->mHeight);
+
+                        int horiz = clientRect.right + winPosRight + winRect.left - winRect.right - winPosX;
+                        int vert = clientRect.bottom + winPosBottom + winRect.top - winRect.bottom - winPosY;
+                        int num1 = vert * ratio;
+                        int num2 = horiz;
+                        int num3 = horiz;
+                        if (horiz <= num1)
+                            num3 = vert * ratio;
+                        if (num3 >= winHeight)
+                        {
+                            num2 = winHeight;
+                        }
+                        else if (horiz <= num1)
+                        {
+                            num2 = vert * ratio;
+                            winWidth = num2;
+LABEL_170:
+                            int num4;
+                            int num5 = num2 * ratio;
+                            if (num5 <= screenHeight)
+                            {
+                                num4 = winWidth;
+                            }
+                            else
+                            {
+                                num4 = screenHeight * ratio;
+                                num5 = screenHeight;
+                            }
+
+                            int num6 = num5 - vert + winPosBottom;
+                            int num7 = winPos->x;
+                            int num8 = num4 - horiz + winPosRight - winPosX;
+                            winPos->cy = num6 - winPosY;
+                            winPos->cx = num8;
+                            if (num8 + num7 > virtualScreenWidth)
+                                winPos->x = virtualScreenWidth - num8;
+
+                            goto LABEL_12;
+                        }
+                        winWidth = num2;
+                        goto LABEL_170;
+                    }
+LABEL_12:
+                    if (aSexyApp != nullptr && uMsg == aSexyApp->mNotifyGameMessage && hWnd == aSexyApp->mHWnd)
+                    {
+                        aSexyApp->HandleNotifyGameMessage(wParam, lParam);
+                    }
+                    goto LABEL_201;
+                }
+                if (uMsg != WM_SIZING)
+                {
+                    switch (uMsg)
+                    {
+                        case WM_SIZE:
+                            aSexyApp->mPhysMinimized = wParam == SIZE_MINIMIZED;
+                            if (wParam == SIZE_RESTORED && aSexyApp->mWidescreenAware)
+                            {
+                                RECT clientRect;
+                                GetClientRect(hWnd, &clientRect);
+                                aSexyApp->mDDInterface->WindowResize(clientRect.right, clientRect.bottom);
+
+                                Rect presRect = aSexyApp->mDDInterface->mPresentationRect;
+
+                                aSexyApp->mWidgetManager->mMouseSourceRect.mX = presRect.mX;
+                                aSexyApp->mWidgetManager->mMouseSourceRect.mY = presRect.mY;
+                                aSexyApp->mWidgetManager->mMouseSourceRect.mWidth = presRect.mWidth;
+                                aSexyApp->mWidgetManager->mMouseSourceRect.mHeight = presRect.mHeight;
+
+                                InvalidateRect(hWnd, nullptr, false);
+                            }
+                            break;
+                        case WM_SYSKEYDOWN:
+                            if (wParam != VK_F4)
+                                return 0;
+                            break;
+                        case WM_CLOSE:
+                            aSexyApp->CloseRequestAsync();
+                            return 0;
+                        default:
+                            break;
+                    }
+
+                    goto LABEL_12;
+                }
+
+                if (!aSexyApp->mWidescreenAware)
+                    goto LABEL_12;
+
+                RECT wndRect;
+                GetWindowRect(hWnd, &wndRect);
+                LPRECT theRect = (LPRECT)lParam;
+                if (wParam != WMSZ_BOTTOMRIGHT)
+                {
+                    theRect->left = wndRect.left;
+                    theRect->right = wndRect.right;
+                    theRect->top = wndRect.top;
+                    theRect->bottom = wndRect.bottom;
+                    return 0;
+                }
+
+                RECT cRect;
+                GetClientRect(hWnd, &cRect);
+                Ratio ratio;
+                if (aSexyApp->mEnableWindowAspect)
+                    ratio = aSexyApp->mWindowAspect;
+                else
+                    ratio.Set(aSexyApp->mWidth, aSexyApp->mHeight);
+
+                int height = theRect->bottom - theRect->top;
+                cRect.right += wndRect.left + theRect->right - theRect->left - wndRect.right;
+                cRect.bottom += wndRect.top + height - wndRect.bottom;
+                int vNum = cRect.right;
+                if (cRect.right <= cRect.bottom * ratio)
+                    vNum = cRect.bottom * ratio;
+                int n1;
+                int v59 = cRect.right;
+                if (vNum >= GetSystemMetrics(SM_CXSCREEN))
+                {
+                    n1 = GetSystemMetrics(SM_CXSCREEN);
+                }
+                else
+                {
+                    n1 = cRect.bottom * ratio;
+                    if (cRect.right > n1)
+                    {
+LABEL_188:
+                        int v60 = v59 * ratio;
+                        if (v60 > GetSystemMetrics(SM_CYSCREEN))
+                        {
+                            v60 = GetSystemMetrics(SM_CYSCREEN);
+                            v59 = v60 * ratio;
+                        }
+
+                        theRect->right += v59 - cRect.right;
+                        theRect->bottom += v60 - cRect.bottom;
+                        goto LABEL_12;
+                    }
+                }
+
+                v59 = n1;
+                goto LABEL_188;
+            }
+
+            if (uMsg == WM_SYSCOLORCHANGE || uMsg == WM_DISPLAYCHANGE)
+            {
+                WindowsMessageList::iterator aMsgListItr = aSexyApp->mDeferredMessages.begin();
+                while (true)
+                {
+                    if (aMsgListItr == aSexyApp->mDeferredMessages.end())
+                        break;
+
+                    MSG& aMsg2 = *aMsgListItr;
+
+                    if (aMsg2.message == WM_SYSCOLORCHANGE || aMsg2.message == WM_DISPLAYCHANGE)
+                        pushMessage = false;
+
+                    ++aMsgListItr;
+
+                    if (!pushMessage)
+                        goto LABEL_153;
+                }
+            }
+        }
+
+        MSG msg;
+        msg.hwnd = hWnd;
+        msg.message = uMsg;
+        msg.lParam = lParam;
+        msg.wParam = wParam;
+
+        aSexyApp->mDeferredMessages.push_back(msg);
+
+        goto LABEL_153;
+    }
+
+    LRESULT result;
+
+    if (uMsg >= WM_SYSKEYDOWN)
+        goto LABEL_34;
+    if (uMsg <= WM_ENDSESSION)
+    {
+        if (uMsg != WM_ENDSESSION)
+        {
+            switch (uMsg)
+            {
+                case WM_DESTROY:
+                {
+                    char aStr[256];
+                    sprintf(aStr, "DESTROYED HWND: %d\r\n", hWnd);
+                    OutputDebugStringA(aStr);
+                    goto LABEL_12;
+                }
+                case WM_MOVE:
+                case WM_SIZE:
+                case WM_CLOSE:
+                case WM_SYSCOLORCHANGE:
+                    goto LABEL_34;
+                case WM_ENABLE:
+                    if (aSexyApp == nullptr)
+                        goto LABEL_201;
+                    aSexyApp->mIsDisabled = wParam == 0;
+                    goto LABEL_12;
+                case WM_PAINT:
+                {
+                    if (aSexyApp == nullptr)
+                        goto LABEL_201;
+                    if (!aSexyApp->mInitialized || gInAssert || aSexyApp->mSEHOccured)
+                        goto LABEL_12;
+                    RECT newClientRect;
+                    GetClientRect(hWnd, &newClientRect);
+
+                    PAINTSTRUCT ps;
+                    BeginPaint(hWnd, &ps);
+
+                    if (aSexyApp->mRunning)
+                        aSexyApp->Redraw(nullptr);
+
+                    EndPaint(hWnd, &ps);
+
+                    result = 0;
+                    break;
+                }
+                case WM_QUERYOPEN:
+                    if (aSexyApp == nullptr)
+                        goto LABEL_201;
+                    if (aSexyApp->AppCanRestore())
+                        goto LABEL_12;
+                    result = 0;
+                    break;
+                case WM_ERASEBKGND:
+                    return 1;
+                default:
+                    goto LABEL_12;
+            }
+
+            return result;
+        }
+
+        if (aSexyApp != nullptr)
+        {
+            aSexyApp->Shutdown();
+            goto LABEL_12;
+        }
+LABEL_201:
+        if (gSexyAppBase->mIsWideWindow)
+            return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+        else
+            return DefWindowProcA(hWnd, uMsg, wParam, lParam);
+    }
+
+    switch (uMsg)
+    {
+        case WM_ACTIVATEAPP:
+            if (aSexyApp == nullptr)
+                goto LABEL_201;
+            if (!aSexyApp->mPlayingDemoBuffer && hWnd == aSexyApp->mHWnd)
+                aSexyApp->mActive = wParam != 0;
+            goto LABEL_34;
+        case WM_SETCURSOR:
+            if (aSexyApp != nullptr && !aSexyApp->mSEHOccured)
+                aSexyApp->EnforceCursor();
+            return 1;
+        case WM_GETMINMAXINFO:
+        {
+            if (aSexyApp != nullptr)
+            {
+                RECT nRect;
+                nRect.left = 0;
+                nRect.top = 0;
+                nRect.right = aSexyApp->mWidgetManager->mWidth;
+                nRect.bottom = aSexyApp->mWidgetManager->mHeight;
+                if (aSexyApp->mEnableWindowAspect)
+                    nRect.right = aSexyApp->mWidgetManager->mHeight * aSexyApp->mWindowAspect;
+
+                DWORD windowStyle = GetWindowLongA(hWnd, GWL_STYLE);
+                AdjustWindowRect(&nRect, windowStyle, FALSE);
+
+                LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
+                lpMMI->ptMaxSize.x = nRect.right - nRect.left;
+                lpMMI->ptMaxTrackSize.x = nRect.right - nRect.left;
+                lpMMI->ptMaxSize.y = nRect.bottom - nRect.top;
+                lpMMI->ptMaxTrackSize.y = nRect.bottom - nRect.top;
+
+                if (!gIs3D && aSexyApp->mDDInterface->mInitialized)
+                {
+                    lpMMI->ptMinTrackSize.x = lpMMI->ptMaxTrackSize.x;
+                    lpMMI->ptMinTrackSize.y = lpMMI->ptMaxTrackSize.y;
+                }
+            }
+            return 0;
+        }
+        case WM_WINDOWPOSCHANGING:
+        case WM_DISPLAYCHANGE:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        case WM_CHAR:
+            goto LABEL_34;
+        case WM_NCHITTEST:
+        {
+            if (aSexyApp == nullptr)
+                goto LABEL_201;
+
+            if ((GetWindowLongA(hWnd, GWL_STYLE) & WS_THICKFRAME) == 0)
+                goto LABEL_12;
+
+            RECT aRect;
+            GetClientRect(hWnd, &aRect);
+            POINT p;
+            ClientToScreen(hWnd, &p);
+            aRect.right = p.x;
+            aRect.bottom = p.y;
+
+            int curX = LOWORD(lParam);
+            int curY = HIWORD(lParam);
+
+            int someNum1 = p.x + p.y - curY - curX;
+            int someNum2 = (aRect.right - aRect.left) / 40;
+            if (gIs3D && someNum1 < someNum2)
+            {
+                aSexyApp->mIsSizeCursor = true;
+                ::SetCursor(LoadCursor(nullptr, IDC_SIZENWSE));
+                result = HTBOTTOMRIGHT;
+            }
+            else
+            {
+                if (gSexyAppBase->mIsWideWindow)
+                    result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
+                else
+                    result = DefWindowProcA(hWnd, uMsg, wParam, lParam);
+
+                if (result == HTTOP)
+                {
+                    ::SetCursor(LoadCursor(nullptr, IDC_ARROW));
+                    result = HTCAPTION;
+                }
+                else if (result == HTLEFT || result == HTRIGHT || result == HTBOTTOM)
+                {
+                    ::SetCursor(LoadCursor(nullptr, IDC_ARROW));
+                    result = HTBORDER;
+                }
+                else
+                {
+                    aSexyApp->mIsSizeCursor = false;
+                }
+            }
+
+            break;
+        }
+        case WM_NCLBUTTONDOWN:
+        {
+            if (aSexyApp == nullptr)
+                goto LABEL_201;
+
+            LRESULT ret = DefWindowProcA(hWnd, uMsg, wParam, lParam);
+            if (aSexyApp->mPauseWhenMoving)
+                aSexyApp->ClearUpdateBacklog();
+            return ret;
+        }
+        default:
+            goto LABEL_12;
+    }
+
+    return result;
 }

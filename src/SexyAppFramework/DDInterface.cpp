@@ -2,12 +2,19 @@
 
 using namespace Sexy;
 
+bool Sexy::gIs3D = false;
+
 DDInterface::DDInterface(SexyAppBase *theApp)
 {
     // TODO: Implement
 }
 
 DDInterface::~DDInterface()
+{
+    // TODO: Implement
+}
+
+void DDInterface::WindowResize(int width, int height)
 {
     // TODO: Implement
 }
