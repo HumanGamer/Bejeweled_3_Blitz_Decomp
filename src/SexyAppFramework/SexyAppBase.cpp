@@ -895,8 +895,52 @@ void SexyAppBase::Start()
     WriteToRegistry();
 }
 
+void SexyAppBase::ShutdownHook() {}
+
 void SexyAppBase::Shutdown()
 {
+    if (mPrimaryThreadId != 0 && GetCurrentThreadId() != mPrimaryThreadId)
+    {
+        mLoadingFailed = true;
+    }
+    else if (!mShutdown)
+    {
+        mExitToTop = true;
+        mShutdown = true;
+        ShutdownHook();
+
+        if (mPlayingDemoBuffer)
+        {
+            //if the music/sfx volume is 0, then it means that in playback
+            //someone pressed the "S" key to mute sounds (or that the
+            //sound volume was set to 0 in the first place). Out of politeness,
+            //return the system sound volume to what it last was in the game.
+            SetMusicVolume(mDemoMusicVolume);
+            SetSfxVolume(mDemoSfxVolume);
+        }
+
+        // Blah
+        while (mCursorThreadRunning)
+        {
+            Sleep(10);
+        }
+
+        if (mMusicInterface != nullptr)
+            mMusicInterface->StopAllMusic();
+
+        if (!mIsPhysWindowed && mDDInterface != nullptr && mDDInterface->mDD != nullptr)
+        {
+            mDDInterface->mDD->RestoreDisplayMode();
+        }
+
+        if (mHWnd != nullptr)
+            ShowWindow(mHWnd, SW_HIDE);
+
+        RestoreScreenResolution();
+
+        if (mReadFromRegistry)
+            WriteToRegistry();
+    }
     // TODO: Implement
 }
 

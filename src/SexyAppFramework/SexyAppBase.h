@@ -411,6 +411,7 @@ namespace Sexy
         // Common overrides:
 	    virtual MusicInterface*	CreateMusicInterface(HWND theHWnd);
         virtual void InitHook();
+	    virtual void ShutdownHook();
         virtual void PreTerminate();
         virtual void LoadingThreadProc();
 	    virtual void WriteToRegistry();

@@ -12,6 +12,10 @@ namespace Sexy
 
         // TODO: Implement
 
+	    virtual void StopAllMusic();
+
+        // TODO: Implement
+
 	    virtual void Update();
     };
 }
