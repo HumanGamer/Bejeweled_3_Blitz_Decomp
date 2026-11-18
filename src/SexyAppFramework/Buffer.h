@@ -21,6 +21,8 @@ namespace Sexy
         // TODO: Implement
 
         void WriteNumBits(int theNum, int theBits);
+        // TODO: Implement
+	    void WriteBoolean(bool theBool);
 
         // TODO: Implement
 

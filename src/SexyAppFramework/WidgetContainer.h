@@ -29,5 +29,10 @@ namespace Sexy
         // TODO: Implement
 
         virtual void MarkAllDirty();
+
+        // TODO: Implement
+
+        virtual void SysColorChangedAll();
+	    virtual void SysColorChanged();
     };
 }

@@ -14,6 +14,7 @@
 #include "Debug.h"
 #include "DSoundManager.h"
 #include "FModMusicInterface.h"
+#include "KeyCodes.h"
 #include "MusicInterface.h"
 #include "PerfTimer.h"
 #include "SEHCatcher.h"
@@ -1000,8 +1001,495 @@ void SexyAppBase::ClearKeysDown()
 //  it won't keep crashing and stuff
 bool SexyAppBase::ProcessDeferredMessages(bool singleMessage)
 {
-    // TODO: Implement
-    return false;
+    PerfTimer perfTimer;
+    if (mShowFPS && mShowFPSMode <= FPS_ShowCoords)
+        perfTimer.Start();
+
+    if (!mDeferredMessages.empty())
+    {
+        MSG aMsg = mDeferredMessages.front();
+        mDeferredMessages.pop_front();
+
+        UINT uMsg = aMsg.message;
+        LPARAM lParam = aMsg.lParam;
+        WPARAM wParam = aMsg.wParam;
+        HWND hWnd = aMsg.hwnd;
+
+        if (mRecordingDemoBuffer && !mShutdown)
+        {
+            if (uMsg > WM_KEYDOWN)
+            {
+                if (uMsg > WM_MBUTTONUP)
+                {
+                    if (uMsg == WM_MOUSEWHEEL)
+                    {
+                        int aZDelta = ((short)HIWORD(wParam)) / 120;
+
+                        WriteDemoTimingBlock();
+                        mDemoBuffer.WriteNumBits(0, 1);
+                        mDemoBuffer.WriteNumBits(DEMO_MOUSE_WHEEL, 5);
+                        mDemoBuffer.WriteNumBits(aZDelta, 8);
+                    }
+                }
+                else if (uMsg >= WM_MOUSEMOVE)
+                {
+                    int aCurX = (short) LOWORD(lParam);
+                    int aCurY = (short) HIWORD(lParam);
+
+                    int aDiffX = aCurX - mLastDemoMouseX;
+                    int aDiffY = aCurY - mLastDemoMouseY;
+
+                    if ((abs(aCurX - mLastDemoMouseX) < 32) && (abs(aCurY - mLastDemoMouseY) < 32))
+                    {
+                        if ((aDiffX != 0) || (aDiffY != 0))
+                        {
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(1, 1);
+                            mDemoBuffer.WriteNumBits(0, 1);
+                            mDemoBuffer.WriteNumBits(aDiffX, 6);
+                            mDemoBuffer.WriteNumBits(aDiffY, 6);
+                        }
+                    }
+                    else
+                    {
+                        WriteDemoTimingBlock();
+                        mDemoBuffer.WriteNumBits(0, 1);
+                        mDemoBuffer.WriteNumBits(DEMO_MOUSE_POSITION, 5);
+                        mDemoBuffer.WriteNumBits(aCurX, 12);
+                        mDemoBuffer.WriteNumBits(aCurY, 12);
+                    }
+
+                    bool down = true;
+                    int aBtnNum = 0;
+                    switch (uMsg)
+                    {
+                        case WM_LBUTTONDOWN:
+                            aBtnNum = 1;
+                            break;
+                        case WM_RBUTTONDOWN:
+                            aBtnNum = -1;
+                            break;
+                        case WM_MBUTTONDOWN:
+                            aBtnNum = 3;
+                            break;
+                        case WM_LBUTTONDBLCLK:
+                            aBtnNum = 2;
+                            break;
+                        case WM_RBUTTONDBLCLK:
+                            aBtnNum = -2;
+                            break;
+                        case WM_LBUTTONUP:
+                            aBtnNum = 1;
+                            down = false;
+                            break;
+                        case WM_RBUTTONUP:
+                            aBtnNum = -1;
+                            down = false;
+                            break;
+                        case WM_MBUTTONUP:
+                            aBtnNum = 3;
+                            down = false;
+                            break;
+                    }
+
+                    if (aBtnNum != 0)
+                    {
+                        WriteDemoTimingBlock();
+                        mDemoBuffer.WriteNumBits(1, 1);
+                        mDemoBuffer.WriteNumBits(1, 1);
+                        mDemoBuffer.WriteNumBits(down ? 1 : 0, 1);
+                        mDemoBuffer.WriteNumBits(aBtnNum, 3);
+                    }
+
+                    mLastDemoMouseX = aCurX;
+                    mLastDemoMouseY = aCurY;
+                }
+                else
+                {
+                    switch (uMsg)
+                    {
+                        case WM_KEYUP:
+                        case WM_SYSKEYUP:
+                        {
+                            KeyCode aKeyCode = (KeyCode) wParam;
+
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(0, 1);
+                            mDemoBuffer.WriteNumBits(DEMO_KEY_UP, 5);
+                            mDemoBuffer.WriteNumBits((int) aKeyCode, 8);
+                            break;
+                        }
+                        case WM_CHAR:
+                        {
+					        SexyChar aChar = (SexyChar) wParam;
+
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(0, 1);
+                            mDemoBuffer.WriteNumBits(DEMO_KEY_CHAR, 5);
+                            mDemoBuffer.WriteNumBits(sizeof(SexyChar) == 2, 1);
+                            mDemoBuffer.WriteNumBits(aChar, sizeof(SexyChar) * 8);
+                            break;
+                        }
+                        case WM_SYSKEYDOWN:
+                            goto LABEL_26;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else
+            {
+                switch (uMsg)
+                {
+                    case WM_KEYDOWN:
+                    {
+LABEL_26:
+					    KeyCode aKeyCode = (KeyCode) wParam;
+                        WriteDemoTimingBlock();
+                        mDemoBuffer.WriteNumBits(0, 1);
+                        mDemoBuffer.WriteNumBits(DEMO_KEY_DOWN, 5);
+                        mDemoBuffer.WriteNumBits(aKeyCode, 8);
+                        break;
+                    }
+                    case WM_SIZE:
+                    {
+                        bool isMinimized = wParam == SIZE_MINIMIZED;
+                        WriteDemoTimingBlock();
+                        mDemoBuffer.WriteNumBits(0, 1);
+                        mDemoBuffer.WriteNumBits(DEMO_SIZE, 5);
+                        mDemoBuffer.WriteBoolean(isMinimized);
+                        break;
+                    }
+                    case WM_CLOSE:
+                    {
+                        if (hWnd == mHWnd || hWnd == mInvisHWnd)
+                        {
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(0, 1);
+                            mDemoBuffer.WriteNumBits(DEMO_CLOSE, 5);
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        if (uMsg == WM_ACTIVATEAPP && hWnd == mHWnd)
+                        {
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(0, 1);
+                            mDemoBuffer.WriteNumBits(DEMO_ACTIVATE_APP, 5);
+                            mDemoBuffer.WriteNumBits((wParam != 0) ? 1 : 0, 1);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (mPlayingDemoBuffer)
+        {
+LABEL_161:
+            if (uMsg == WM_CLOSE && (hWnd == mHWnd || hWnd == mInvisHWnd))
+            {
+                mManualShutdown = true;
+                Shutdown();
+            }
+
+            return !mDeferredMessages.empty();
+        }
+
+        if (uMsg <= WM_KEYDOWN)
+        {
+            switch (uMsg)
+            {
+                case WM_MOVE:
+                {
+                    if (hWnd == mHWnd && mIsWindowed)
+                    {
+                        WINDOWPLACEMENT wndpl;
+                        wndpl.length = sizeof(wndpl);
+
+                        GetWindowPlacement(hWnd, &wndpl);
+                        if (wndpl.showCmd == SW_SHOW || wndpl.showCmd == SW_SHOWNORMAL)
+                        {
+                            mPreferredX = wndpl.rcNormalPosition.left;
+                            mPreferredY = wndpl.rcNormalPosition.top;
+                        }
+                    }
+                    break;
+                }
+                case WM_SIZE:
+                {
+					bool isMinimized = wParam == SIZE_MINIMIZED;
+                    if (hWnd == mHWnd && !mShutdown && isMinimized != mMinimized)
+                    {
+                        mMinimized = isMinimized;
+
+                        // We don't want any sounds (or music) playing while its minimized
+                        if (mMinimized)
+                        {
+                            if (mMuteOnLostFocus)
+                                Mute(true);
+                        }
+                        else
+                        {
+                            if (mMuteOnLostFocus)
+                                Unmute(true);
+
+                            mWidgetManager->MarkAllDirty();
+                        }
+                    }
+
+                    RehupFocus();
+                    if (wParam == SIZE_MAXIMIZED)
+                    {
+                        SwitchScreenMode(false);
+                    }
+                    else if (wParam == SIZE_RESTORED && hWnd == mHWnd && mIsWindowed)
+                    {
+                        mPreferredWidth = LOWORD(lParam);
+                        mPreferredHeight = HIWORD(lParam);
+                    }
+
+                    break;
+                }
+                case WM_SYSCOLORCHANGE:
+                case WM_DISPLAYCHANGE:
+                {
+                    mWidgetManager->SysColorChangedAll();
+                    mWidgetManager->MarkAllDirty();
+                    break;
+                }
+                case WM_ACTIVATEAPP:
+                {
+                    if (hWnd == mHWnd && !gInAssert && !mSEHOccured && !mShutdown)
+                    {
+                        RehupFocus();
+
+                        if (mActive && !mIsWindowed)
+                            mWidgetManager->MarkAllDirty();
+
+                        if (mIsOpeningURL && !mActive)
+                            URLOpenSucceeded(mOpeningURL);
+                    }
+                    break;
+                }
+                case WM_KEYDOWN:
+                {
+LABEL_88:
+                    mLastUserInputTick = mLastTimerTime;
+                    if (wParam == VK_RETURN)
+                    {
+                        if (uMsg == WM_SYSKEYDOWN && !mForceFullScreen && !mForceWindowed && mAllowAltEnter)
+                        {
+                            SwitchScreenMode(!mIsWindowed);
+                            ClearKeysDown();
+                            return !mDeferredMessages.empty();
+                        }
+                    }
+                    else if (wParam == 'D')
+                    {
+                        if (mWidgetManager != nullptr && mWidgetManager->mKeyDown[KEYCODE_CONTROL] && mWidgetManager->mKeyDown[KEYCODE_MENU])
+                        {
+                            PlaySoundA("c:\\windows\\media\\Windows XP Menu Command.wav", nullptr, SND_ASYNC);
+                            mDebugKeysEnabled = !mDebugKeysEnabled;
+                        }
+                    }
+
+                    if (!KeyDown((KeyCode) wParam))
+                    {
+LABEL_101:
+                        mWidgetManager->KeyDown((KeyCode) wParam);
+                        mWidgetManager->KeyMessageRaw(hWnd, uMsg, wParam, lParam);
+                    }
+
+                    break;
+                }
+                default:
+                    goto LABEL_161;
+            }
+
+            goto LABEL_161;
+        }
+
+        if (uMsg > WM_TIMER)
+        {
+            if (uMsg >= WM_MOUSEMOVE)
+            {
+                if (uMsg <= WM_MBUTTONUP)
+                {
+                    if (!gInAssert && !mSEHOccured)
+                    {
+                        int x = (short) LOWORD(lParam);
+                        int y = (short) HIWORD(lParam);
+
+                        mWidgetManager->RemapMouse(x, y);
+
+					    mLastUserInputTick = mLastTimerTime;
+
+					    mWidgetManager->MouseMove(x, y);
+
+                        if (!mMouseIn)
+                        {
+                            if (mRecordingDemoBuffer)
+                            {
+                                WriteDemoTimingBlock();
+                                mDemoBuffer.WriteNumBits(0, 1);
+                                mDemoBuffer.WriteNumBits(DEMO_MOUSE_ENTER, 5);
+                            }
+
+                            mMouseIn = true;
+                            EnforceCursor();
+                        }
+
+                        switch (uMsg)
+                        {
+                            case WM_LBUTTONDOWN:
+                                SetCapture(hWnd);
+                                mWidgetManager->MouseDown(x, y, 1);
+                                break;
+                            case WM_LBUTTONUP:
+                                if ((mWidgetManager->mDownButtons & ~1) == 0)
+                                    ReleaseCapture();
+                                mWidgetManager->MouseUp(x, y, 1);
+                                break;
+                            case WM_LBUTTONDBLCLK:
+                                SetCapture(hWnd);
+                                mWidgetManager->MouseDown(x, y, 2);
+                                break;
+                            case WM_RBUTTONDOWN:
+                                SetCapture(hWnd);
+                                mWidgetManager->MouseDown(x, y, -1);
+                                break;
+                            case WM_RBUTTONUP:
+                                if ((mWidgetManager->mDownButtons & ~2) == 0)
+                                    ReleaseCapture();
+                                mWidgetManager->MouseUp(x, y, -1);
+                                break;
+                            case WM_RBUTTONDBLCLK:
+                                SetCapture(hWnd);
+                                mWidgetManager->MouseDown(x, y, -2);
+                                break;
+                            case WM_MBUTTONDOWN:
+                                SetCapture(hWnd);
+                                mWidgetManager->MouseDown(x, y, 3);
+                                break;
+                            case WM_MBUTTONUP:
+                                if ((mWidgetManager->mDownButtons & ~4) == 0)
+                                    ReleaseCapture();
+                                mWidgetManager->MouseUp(x, y, 3);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                else if (uMsg == WM_MOUSEWHEEL)
+                {
+                    char aZDelta = ((short)HIWORD(wParam)) / 120;
+                    if (mShowWidgetInspector)
+                        mWidgetInspectorScrollOffset -= aZDelta;
+                    else
+                        mWidgetManager->MouseWheel(aZDelta);
+
+                    return !mDeferredMessages.empty();
+                }
+            }
+
+            goto LABEL_161;
+        }
+
+        switch (uMsg)
+        {
+            case WM_KEYUP:
+            case WM_SYSKEYUP:
+            {
+                mLastUserInputTick = mLastTimerTime;
+                mWidgetManager->KeyUp((KeyCode) wParam);
+                goto LABEL_101;
+            }
+            case WM_CHAR:
+            {
+                mLastUserInputTick = mLastTimerTime;
+                mWidgetManager->KeyChar((SexyChar) wParam);
+                goto LABEL_101;
+            }
+            case WM_SYSKEYDOWN:
+                goto LABEL_88;
+            case WM_TIMER:
+            {
+                if (!gInAssert && !mSEHOccured && mRunning)
+                {
+                    DWORD aTimeNow = GetTickCount();
+                    if (aTimeNow - mLastTimerTime > 500)
+                        mLastBigDelayTime = aTimeNow;
+
+                    mLastTimerTime = aTimeNow;
+
+                    if (mIsOpeningURL && aTimeNow - mLastBigDelayTime > 5000)
+                    {
+                        if (aTimeNow - mOpeningURLTime > 8000 && !mActive)
+                        {
+                            URLOpenSucceeded(mOpeningURL);
+                        }
+                        else if (aTimeNow - mOpeningURLTime > 12000 && mActive)
+                        {
+                            URLOpenFailed(mOpeningURL);
+                        }
+                    }
+
+                    RECT clientRect;
+                    GetClientRect(hWnd, &clientRect);
+
+                    POINT aULCorner = {0, 0};
+                    ClientToScreen(hWnd, &aULCorner);
+
+                    POINT aBRCorner = {clientRect.right, clientRect.bottom};
+                    ClientToScreen(hWnd, &aBRCorner);
+
+                    POINT aPoint;
+                    GetCursorPos(&aPoint);
+
+                    HWND aWindow = ::WindowFromPoint(aPoint);
+                    bool isMouseIn = (aWindow == hWnd) &&
+                        (aPoint.x >= aULCorner.x) && (aPoint.y >= aULCorner.y) &&
+                        (aPoint.x < aBRCorner.x) && (aPoint.y < aBRCorner.y);
+
+                    if (mMouseIn != isMouseIn)
+                    {
+                        if (mRecordingDemoBuffer && !mShutdown)
+                        {
+                            WriteDemoTimingBlock();
+                            mDemoBuffer.WriteNumBits(0, 1);
+
+                            if (isMouseIn)
+                                mDemoBuffer.WriteNumBits(DEMO_MOUSE_ENTER, 5);
+                            else
+                                mDemoBuffer.WriteNumBits(DEMO_MOUSE_EXIT, 5);
+                        }
+
+                        if (!isMouseIn)
+                        {
+                            int x = aPoint.x - aULCorner.x;
+                            int y = aPoint.y - aULCorner.y;
+                            mWidgetManager->RemapMouse(x, y);
+                            mWidgetManager->MouseExit(x, y);
+                        }
+
+                        mMouseIn = isMouseIn;
+                        EnforceCursor();
+
+                        return !mDeferredMessages.empty();
+                    }
+                }
+                break;
+            }
+
+            default:
+                goto LABEL_161;
+        }
+    }
+
+    return !mDeferredMessages.empty();
 }
 
 void SexyAppBase::UpdateFTimeAcc()
@@ -1459,6 +1947,19 @@ void SexyAppBase::LogScreenSaverError(const std::string &theError)
         fprintf(aFile,"%s %s %u\n",theError.c_str(),_strtime(aBuf),GetTickCount());
         fclose(aFile);
     }
+}
+
+void SexyAppBase::URLOpenFailed(const std::string &theURL)
+{
+    mIsOpeningURL = false;
+}
+
+void SexyAppBase::URLOpenSucceeded(const std::string &theURL)
+{
+    mIsOpeningURL = false;
+
+    if (mShutdownOnURLOpen)
+        Shutdown();
 }
 
 std::string SexyAppBase::GetProductVersion(const std::string& thePath)
@@ -1998,6 +2499,18 @@ bool SexyAppBase::DrawDirtyStuff()
 void SexyAppBase::Redraw(Rect *theClipRect)
 {
     // TODO: Implement
+}
+
+bool SexyAppBase::KeyDown(KeyCode key)
+{
+    if (key == KEYCODE_F1)
+    {
+        if (mLoadingThreadCompleted)
+            mShowCompatInfoMode = (EShowCompatInfoMode)((mShowCompatInfoMode + 1) % SHOWCOMPATINFOMODE_COUNT);
+        return true;
+    }
+
+    return mDebugKeysEnabled && DebugKeyDown(key);
 }
 
 bool SexyAppBase::CheckSignature(const Buffer& theBuffer, const std::string& theFileName)

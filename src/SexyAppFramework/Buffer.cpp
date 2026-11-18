@@ -17,6 +17,11 @@ void Buffer::WriteNumBits(int theNum, int theBits)
     // TODO: Implement
 }
 
+void Buffer::WriteBoolean(bool theBool)
+{
+    // TODO: Implement
+}
+
 uchar Buffer::ReadByte() const
 {
     // TODO: Implement

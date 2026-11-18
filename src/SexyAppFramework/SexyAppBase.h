@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "CritSect.h"
 #include "DialogListener.h"
+#include "KeyCodes.h"
 #include "Ratio.h"
 #include "Rect.h"
 #include "SharedImage.h"
@@ -440,6 +441,9 @@ namespace Sexy
         virtual void Popup(const std::wstring& theString);
 	    virtual void LogScreenSaverError(const std::string &theError);
 
+
+        virtual void URLOpenFailed(const std::string& theURL);
+        virtual void URLOpenSucceeded(const std::string& theURL);
         virtual std::string GetProductVersion(const std::string& thePath);
 
         virtual void SEHOccured();
@@ -454,6 +458,8 @@ namespace Sexy
         static void				LoadingThreadProcStub(void *theArg);
 
         void StartLoadingThread();
+
+        virtual bool KeyDown(KeyCode key);
 
         virtual bool CheckSignature(const Buffer& theBuffer, const std::string& theFileName);
         virtual bool DrawDirtyStuff();

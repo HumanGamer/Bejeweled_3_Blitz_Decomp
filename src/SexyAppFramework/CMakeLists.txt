@@ -37,6 +37,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     Rect.h
     Ratio.cpp
     Ratio.h
+    KeyCodes.cpp
+    KeyCodes.h
     WidgetContainer.cpp
     WidgetContainer.h
     WidgetManager.cpp
