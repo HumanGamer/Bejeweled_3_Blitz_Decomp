@@ -20,6 +20,7 @@
 #include "SEHCatcher.h"
 #include "PopLoc.h"
 #include "PropertiesParser.h"
+#include "RenderDevice.h"
 #include "ResourceManager.h"
 #include "SexyLocale.h"
 #include "WidgetManager.h"
@@ -668,6 +669,9 @@ void SexyAppBase::Init()
 
     mInitialized = true;
 }
+
+void SexyAppBase::PreDDInterfaceInitHook() {}
+void SexyAppBase::PostDDInterfaceInitHook() {}
 
 MusicInterface* SexyAppBase::CreateMusicInterface(HWND theWindow)
 {
@@ -2487,6 +2491,11 @@ void SexyAppBase::ReInitImages()
     // TODO: Implement
 }
 
+void SexyAppBase::DeleteNativeImageData()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::SetMusicVolume(double theVolume)
 {
     // TODO: Implement
@@ -2742,6 +2751,11 @@ bool SexyAppBase::Is3DAccelerated()
     return mDDInterface->mIs3D;
 }
 
+void SexyAppBase::DemoSyncRefreshRate()
+{
+    // TODO: Implement
+}
+
 void SexyAppBase::Set3DAccelerated(bool is3D, bool reinit)
 {
     // TODO: Implement
@@ -2764,8 +2778,41 @@ void SexyAppBase::SwitchScreenMode(bool wantWindowed, bool is3d, bool force)
 
 int SexyAppBase::InitDDInterface()
 {
-    // TODO: Implement
-    return DDInterface::EResult::RESULT_OK;
+    PreDDInterfaceInitHook();
+
+    // TODO: For some reason enter and leave critical section are called here in the binary?
+    //EnterCriticalSection(&mDDInterface->mCritSect->mCriticalSection);
+    DeleteNativeImageData();
+    int aResult = mDDInterface->Init(mHWnd, mIsPhysWindowed);
+    //LeaveCriticalSection(&mDDInterface->mCritSect->mCriticalSection)
+    DemoSyncRefreshRate();
+
+    if (aResult == DDInterface::RESULT_OK)
+    {
+        if (mWidescreenTranslate)
+        {
+            mScreenBounds.mX = (mWidth - mDDInterface->mWidth) / 2;
+            mScreenBounds.mY = (mHeight - mDDInterface->mHeight) / 2;
+        }
+        else
+        {
+            mScreenBounds.mX = 0;
+            mScreenBounds.mY = 0;
+        }
+
+        mScreenBounds.mWidth = mDDInterface->mWidth;
+        mScreenBounds.mHeight = mDDInterface->mHeight;
+
+        mWidgetManager->Resize(mScreenBounds, mDDInterface->mPresentationRect);
+
+        if (mDDInterface != nullptr && mDDInterface->mRenderDevice3D != nullptr && (mDDInterface->mRenderDevice3D->GetCapsFlags() & RenderDevice3D::CAPF_AutoWindowedVSync) != 0)
+        {
+            mSoftVSyncWait = false;
+        }
+
+        PostDDInterfaceInitHook();
+    }
+    return aResult;
 }
 
 void SexyAppBase::ClearUpdateBacklog(bool relaxForASecond)

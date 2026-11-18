@@ -63,6 +63,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     CfgMachine.h
     D3DTester.cpp
     D3DTester.h
+    RenderDevice.cpp
+    RenderDevice.h
+    D3DInterface.cpp
+    D3DInterface.h
     DDInterface.cpp
     DDInterface.h
     DDImage.cpp

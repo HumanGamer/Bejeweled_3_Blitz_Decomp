@@ -1,11 +1,19 @@
 #include "DDInterface.h"
 
+#include "AutoCrit.h"
+#include "D3DInterface.h"
+
 using namespace Sexy;
 
 bool Sexy::gIs3D = false;
 
 DDInterface::DDInterface(SexyAppBase *theApp)
 {
+    // TODO: Implement
+
+    mD3DInterface = nullptr;
+    mRenderDevice3D = nullptr;
+
     // TODO: Implement
 }
 
@@ -56,8 +64,32 @@ DDImage *DDInterface::GetScreenImage()
     return mScreenImage;
 }
 
+int DDInterface::Init(HWND theWindow, bool IsWindowed)
+{
+    AutoCrit anAutoCrit(mCritSect);
+
+    mInitialized = false;
+
+    Cleanup();
+
+    if (mD3DInterface != nullptr)
+        delete mD3DInterface;
+
+    mD3DInterface = nullptr;
+    mRenderDevice3D = nullptr;
+
+    // TODO: Implement
+
+    return RESULT_OK;
+}
+
 bool DDInterface::SetCursorImage(Image *theImage)
 {
     // TODO: Implement
     return false;
+}
+
+void DDInterface::Cleanup()
+{
+    // TODO: Implement
 }

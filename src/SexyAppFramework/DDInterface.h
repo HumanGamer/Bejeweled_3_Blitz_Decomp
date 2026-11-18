@@ -12,6 +12,8 @@
 
 namespace Sexy
 {
+    class D3DInterface;
+    class RenderDevice3D;
     class SexyAppBase;
 
     class DDInterface : public NativeDisplay
@@ -30,9 +32,9 @@ namespace Sexy
             RESULT_3D_NOTREADY,
         };
 
-        // TODO: Implement
-
+        D3DInterface* mD3DInterface;
         SexyAppBase* mApp;
+        RenderDevice3D* mRenderDevice3D;
 
         // TODO: Implement
 
@@ -85,6 +87,9 @@ namespace Sexy
         // TODO: Implement
 
     public:
+        void Cleanup();
+
+    public:
         DDInterface(SexyAppBase* theApp);
         virtual ~DDInterface();
 
@@ -93,6 +98,7 @@ namespace Sexy
 	    static std::string ResultToString(int theResult);
 
         DDImage* GetScreenImage();
+	    int Init(HWND theWindow, bool IsWindowed);
 
 	    bool SetCursorImage(Image* theImage);
     };

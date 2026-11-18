@@ -393,6 +393,7 @@ namespace Sexy
         virtual void MakeWindow();
         virtual void EnforceCursor();
         virtual void ReInitImages();
+	    virtual void DeleteNativeImageData();
 
         void StartCursorThread();
 
@@ -423,6 +424,9 @@ namespace Sexy
 
         virtual void Start();
         virtual void Init();
+        virtual void PreDDInterfaceInitHook();
+        virtual void PostDDInterfaceInitHook();
+
         virtual void Shutdown();
 
         virtual void DoParseCmdLine();
@@ -493,6 +497,7 @@ namespace Sexy
 	    bool ReadDemoBuffer(std::string &theError);//UNICODE
 
         bool Is3DAccelerated();
+        void DemoSyncRefreshRate();
 	    void Set3DAccelerated(bool is3D, bool reinit = true);
 
         virtual void SwitchScreenMode();
