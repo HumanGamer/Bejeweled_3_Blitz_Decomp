@@ -65,6 +65,11 @@ target_sources(${PROJECT_NAME} PRIVATE
     D3DTester.h
     RenderDevice.cpp
     RenderDevice.h
+    RenderEffect.cpp
+    RenderEffect.h
+    dsoundversion.h
+    DirectXErrorString.cpp
+    DirectXErrorString.h
     D3DInterface.cpp
     D3DInterface.h
     DDInterface.cpp
@@ -97,7 +102,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     memmgr.h
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC winmm Sexy::ImageLib Sexy::PakLib)
+target_link_libraries(${PROJECT_NAME} PUBLIC winmm ddraw dxguid Sexy::ImageLib Sexy::PakLib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING)
 
