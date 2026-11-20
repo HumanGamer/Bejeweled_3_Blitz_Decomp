@@ -499,6 +499,7 @@ namespace Sexy
         bool Is3DAccelerated();
         void DemoSyncRefreshRate();
 	    void Set3DAccelerated(bool is3D, bool reinit = true);
+	    virtual void Done3dTesting();
 
         virtual void SwitchScreenMode();
         virtual void SwitchScreenMode(bool wantWindowed);

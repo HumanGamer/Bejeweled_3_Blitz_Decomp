@@ -2761,6 +2761,8 @@ void SexyAppBase::Set3DAccelerated(bool is3D, bool reinit)
     // TODO: Implement
 }
 
+void SexyAppBase::Done3dTesting() {}
+
 void SexyAppBase::SwitchScreenMode()
 {
 	SwitchScreenMode(mIsWindowed, Is3DAccelerated(), true);

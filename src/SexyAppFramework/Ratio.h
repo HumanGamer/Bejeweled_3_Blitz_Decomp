@@ -12,6 +12,7 @@ namespace Sexy
         bool operator==(const Ratio& theRatio) const;
         bool operator!=(const Ratio& theRatio) const;
         bool operator<(const Ratio& theRatio) const;
+        bool operator>(const Ratio& theRatio) const;
         int operator*(int theInt) const;
         int operator/(int theInt) const;
         int mNumerator;
@@ -32,6 +33,12 @@ namespace Sexy
     {
         return mNumerator * theRatio.mDenominator / mDenominator < theRatio.mNumerator ||
                mNumerator < theRatio.mNumerator * mDenominator / theRatio.mDenominator;
+    }
+
+    inline bool Ratio::operator>(const Ratio& theRatio) const
+    {
+        return mNumerator * theRatio.mDenominator / mDenominator > theRatio.mNumerator ||
+               mNumerator > theRatio.mNumerator * mDenominator / theRatio.mDenominator;
     }
 
     inline int Ratio::operator*(int theInt) const

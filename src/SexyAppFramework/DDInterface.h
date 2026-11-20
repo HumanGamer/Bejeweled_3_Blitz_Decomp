@@ -146,6 +146,8 @@ namespace Sexy
         void Cleanup3DObjects();
 	    bool GotDXError(HRESULT theResult, const char *theContext = "");
 
+        bool Do3DTest(HWND theHWND);
+
     public:
         DDInterface(SexyAppBase* theApp);
         virtual ~DDInterface();
