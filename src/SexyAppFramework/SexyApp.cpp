@@ -1,5 +1,6 @@
 #include "SexyApp.h"
 
+#include "Debug.h"
 #include "ImageLib.h"
 #include "SEHCatcher.h"
 
@@ -20,7 +21,7 @@ const char* BUILD_INFO_MARKER           = DYNAMIC_DATA_BLOCK + 80;
 const char* SIGNATURE_CODE_MARKER       = DYNAMIC_DATA_BLOCK + 80*2;
 const char* BETA_ID_MARKER              = DYNAMIC_DATA_BLOCK + 80*3;
 
-Sexy::SexyApp::SexyApp()
+SexyApp::SexyApp()
 {
     gSexyApp = this;
 
@@ -54,13 +55,13 @@ Sexy::SexyApp::SexyApp()
         mBuildDate = BUILD_INFO_MARKER + 8;
 }
 
-Sexy::SexyApp::~SexyApp()
+SexyApp::~SexyApp()
 {
     delete mBetaSupport;
     delete mInternetManager;
 }
 
-void Sexy::SexyApp::Init()
+void SexyApp::Init()
 {
     SexyString crashMessage =
             _S("An unexpected error has occured!  Pressing 'Send Report' ")
@@ -87,9 +88,9 @@ void Sexy::SexyApp::Init()
 
     SEHCatcher::mSubmitHost = "www.popcap.com";
 
-    OutputDebugString(StrFormat("Product: %s\r\n", mProdName.c_str()).c_str());
-    OutputDebugString(StrFormat("BuildNum: %d\r\n", mBuildNum).c_str());
-    OutputDebugString(StrFormat("BuildDate: %s\r\n", mBuildDate.c_str()).c_str());
+    OutputDebugStrF("Product: %s\r\n", mProdName.c_str());
+    OutputDebugStrF("BuildNum: %d\r\n", mBuildNum);
+    OutputDebugStrF("BuildDate: %s\r\n", mBuildDate.c_str());
 
     ImageLib::SetJ2KCodecKey("LU5OkT7!L06fiD9nMbCE9ZoJuXxgx4zcgVDd2!a1tb2uHfhRrLG5wnNySQswXqAt2h");
 

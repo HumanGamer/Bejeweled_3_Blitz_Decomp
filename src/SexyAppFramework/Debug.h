@@ -14,6 +14,8 @@ void SexyTrace(const char* theStr);
 
 extern void SexyTraceFmt(const SexyChar* fmt ...);
 extern void OutputDebug(const SexyChar* fmt ...);
+extern void OutputDebugStrF(const char* fmt ...);
+extern void OutputDebugStrF(const wchar_t* fmt ...);
 
 #ifdef NDEBUG
 #define DBG_ASSERTE(exp) ((void)0)

@@ -1,7 +1,9 @@
 #include "DDInterface.h"
 
 #include "AutoCrit.h"
+#include "CfgMachine.h"
 #include "D3DInterface.h"
+#include "DDImage.h"
 #include "Debug.h"
 #include "DirectXErrorString.h"
 #include "SexyAppBase.h"
@@ -210,14 +212,14 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
     mIsWindowed = isWindowed;
     mHasOldCursorArea = false;
 
-    OutputDebug(_S("Application requests %4lu x %4lu [%2d:%2d]\n"), mWidth, mHeight, mAspect.mNumerator, mAspect.mDenominator);
+    OutputDebugStrF("Application requests %4lu x %4lu [%2d:%2d]\n", mWidth, mHeight, mAspect.mNumerator, mAspect.mDenominator);
 
     if (GotDXError(aResult, "DirectDrawCreate"))
         return RESULT_DD_CREATE_FAIL;
 
     if (isWindowed)
     {
-        OutputDebug(_S("Hack aspect is                   [%2d:%2d]\n"), mApp->mWindowAspect.mNumerator, mApp->mWindowAspect.mDenominator);
+        OutputDebugStrF("Hack aspect is                   [%2d:%2d]\n", mApp->mWindowAspect.mNumerator, mApp->mWindowAspect.mDenominator);
 
         Ratio newAspect = mApp->mWindowAspect;
 
@@ -278,11 +280,11 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
             }
         }
 
-        OutputDebug(_S("Window is            %4lu x %4lu [%2d:%2d]\n"), mDisplayWidth, mDisplayHeight, mDisplayAspect.mNumerator, mDisplayAspect.mDenominator);
+        OutputDebugStrF("Window is            %4lu x %4lu [%2d:%2d]\n", mDisplayWidth, mDisplayHeight, mDisplayAspect.mNumerator, mDisplayAspect.mDenominator);
     }
     else
     {
-        OutputDebug(_S("Desktop is           %4lu x %4lu [%2d:%2d]\n"), mDesktopWidth, mDesktopHeight, mDesktopAspect.mNumerator, mDesktopAspect.mDenominator);
+        OutputDebugStrF("Desktop is           %4lu x %4lu [%2d:%2d]\n", mDesktopWidth, mDesktopHeight, mDesktopAspect.mNumerator, mDesktopAspect.mDenominator);
 
         if (mIs3D && (mAspect != mDesktopAspect || mDisplayWidth != mDesktopWidth || mDisplayHeight != mDesktopHeight))
         {
@@ -319,7 +321,7 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
             }
         }
 
-        OutputDebug(_S("Display is           %4lu x %4lu [%2d:%2d]\n"), mDisplayWidth, mDisplayHeight, mDisplayAspect.mNumerator, mDisplayAspect.mDenominator);
+        OutputDebugStrF("Display is           %4lu x %4lu [%2d:%2d]\n", mDisplayWidth, mDisplayHeight, mDisplayAspect.mNumerator, mDisplayAspect.mDenominator);
     }
 
     mIsD3D9 = false;
@@ -423,10 +425,261 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
 
     if (!mIsD3D8Or9)
     {
-        // TODO: Implement
+        if (isWindowed)
+        {
+            mDD->SetCooperativeLevel(mHWnd, DDSCL_NORMAL);
+
+            DDSURFACEDESC2 ddsd;
+            ZeroMemory(&ddsd, sizeof(ddsd));
+            ddsd.dwSize = sizeof(ddsd);
+            ddsd.dwFlags = DDSD_CAPS;
+            ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+            if (mIs3D)
+                ddsd.ddsCaps.dwCaps |= DDSCAPS_3DDEVICE;
+            ddsd.dwBackBufferCount = 1;
+            HRESULT result = CreateSurface(&ddsd, &mPrimarySurface, nullptr);
+            if (result == DDERR_INVALIDPIXELFORMAT)
+                return RESULT_INVALID_COLORDEPTH;
+            if (GotDXError(result, "CreateSurface Windowed Primary"))
+                return RESULT_SURFACE_FAIL;
+
+            mPrimaryDXSurface = new DXSurface7();
+            mPrimaryDXSurface->SetSurface(mPrimarySurface);
+
+            DDSURFACEDESC2 ddsd2;
+            ZeroMemory(&ddsd2, sizeof(ddsd2));
+            ddsd2.dwSize = sizeof(ddsd2);
+            ddsd2.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+            ddsd2.ddsCaps.dwCaps = DDSCAPS_3DDEVICE | DDSCAPS_PALETTE | DDSCAPS_FLIP | DDSCAPS_ALPHA;
+            if (mIs3D)
+                ddsd2.ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_ZBUFFER | DDSCAPS_PRIMARYSURFACE | DDSCAPS_PRIMARYSURFACELEFT | DDSCAPS_OFFSCREENPLAIN;
+            ddsd2.dwWidth = mWidth;
+            ddsd2.dwHeight = mHeight;
+            result = CreateSurface(&ddsd2, &mDrawSurface, nullptr);
+            if (GotDXError(result, "CreateSurface Windowed DrawSurface"))
+                return RESULT_SURFACE_FAIL;
+
+            IDirectDrawClipper* aClipper;
+            result = mDD->CreateClipper(0, &aClipper, nullptr);
+            if (GotDXError(aResult,"CreateClipper Windowed"))
+                return RESULT_FAIL;
+
+            result = aClipper->SetHWnd(0, theWindow);
+            if (SUCCEEDED(result))
+                result = mPrimarySurface->SetClipper(aClipper);
+
+            aClipper->Release();
+        }
+        else
+        {
+            mDD->SetCooperativeLevel(mHWnd, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT | DDSCL_NOWINDOWCHANGES);
+            if (GotDXError(result, "SetCooperativeLevel FullScreen"))
+                return RESULT_EXCLUSIVE_FAIL;
+
+            HRESULT result = mDD->SetDisplayMode(mDisplayWidth, mDisplayHeight, mFullscreenBits);
+            if (GotDXError(result, "SetDisplayMode FullScreen"))
+                return RESULT_DISPCHANGE_FAIL;
+
+            DDSURFACEDESC2 ddsd;
+            ZeroMemory(&ddsd, sizeof(ddsd));
+            ddsd.dwSize = sizeof(ddsd);
+            ddsd.dwFlags = DDSD_BACKBUFFERCOUNT | DDSD_CAPS;
+            ddsd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
+            if (mIs3D)
+                ddsd.ddsCaps.dwCaps |= DDSCAPS_3DDEVICE;
+            result = CreateSurface(&ddsd, &mPrimarySurface, nullptr);
+            if (GotDXError(result, "CreateSurface FullScreen Primary"))
+                return RESULT_SURFACE_FAIL;
+
+            DDSCAPS aCaps;
+            ZeroMemory(&aCaps, sizeof(aCaps));
+            aCaps.dwCaps = DDSCAPS_BACKBUFFER;
+            result = mPrimarySurface->GetAttachedSurface(&aCaps, &mSecondarySurface);
+            if (GotDXError(result, "GetAttachedSurface"))
+                return RESULT_SURFACE_FAIL;
+
+            if (mIsWidescreen)
+            {
+                ClearSurface(mPrimarySurface);
+                ClearSurface(mSecondarySurface);
+            }
+
+            DDSURFACEDESC2 ddsd2;
+            ZeroMemory(&ddsd2, sizeof(ddsd2));
+            ddsd2.dwSize = sizeof(ddsd2);
+            ddsd2.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+            ddsd2.ddsCaps.dwCaps = DDSCAPS_SYSTEMMEMORY | DDSCAPS_OFFSCREENPLAIN;
+            if (mIs3D)
+                ddsd2.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_VIDEOMEMORY | DDSCAPS_3DDEVICE;
+            ddsd2.dwWidth = mWidth;
+            ddsd2.dwHeight = mHeight;
+            result = CreateSurface(&ddsd2, &mDrawSurface, nullptr);
+            if (GotDXError(result, "CreateSurface FullScreen DrawSurface"))
+                return RESULT_SURFACE_FAIL;
+
+            IDirectDrawClipper* aClipper;
+            result = mDD->CreateClipper(0, &aClipper, nullptr);
+            if (GotDXError(aResult,"CreateClipper FullScreen"))
+                return RESULT_FAIL;
+
+            result = aClipper->SetHWnd(0, theWindow);
+            if (SUCCEEDED(result))
+                result = mPrimarySurface->SetClipper(aClipper);
+
+            mSecondarySurfaceImage = new DDImage(this);
+            mSecondarySurfaceImage->SetSurface(mSecondarySurface);
+            if (mIsWidescreen)
+            {
+                ClearSurface(mPrimarySurface);
+                ClearSurface(mSecondarySurface);
+            }
+
+            aClipper->Release();
+
+            if (!mApp->mFullScreenPageFlip)
+                mDD->FlipToGDISurface();
+        }
+
+        if (mDD->GetMonitorFrequency(&mRefreshRate) < 0 || mRefreshRate < 60)
+        {
+            mApp->mVSyncBroken = true;
+            mRefreshRate = 60;
+        }
     }
 
-    // TODO: Implement
+    RECT rect;
+    GetClientRect(mHWnd, &rect);
+    OutputDebugStrF("mHWnd=%08X mW=%d mH=%d WW=%d WH=%d Window=%d D3D8=%d D3D9=%d\r\n", mHWnd, mWidth, mHeight, aRect.right, aRect.bottom, mIsWindowed, mIsD3D8, mIsD3D9);
+
+    if ((mIsWindowed || mIsD3D8Or9) && (rect.right != mWidth || rect.bottom != mHeight))
+        WindowResize(rect.right, rect.bottom);
+
+    if (mRefreshRate < 60)
+    {
+        mApp->mVSyncBroken = true;
+        mRefreshRate = 60;
+    }
+    else if (mRefreshRate > 100) // We must have at least 1 Update per UpdateF for demo compatibility
+    {
+        mApp->mVSyncBroken = true;
+        mRefreshRate = 100;
+    }
+
+    OutputDebugStrF("Draw buffer is       %4lu x %4lu [%2d:%2d]\n", mWidth, mHeight, mAspect.mNumerator, mAspect.mDenominator);
+
+    mMillisecondsPerFrame = 1000 / mRefreshRate;
+
+    DDSURFACEDESC2 ddsd;
+    ZeroMemory(&ddsd, sizeof(ddsd));
+    ddsd.dwSize = sizeof(ddsd);
+    ddsd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+    ddsd.ddsCaps.dwCaps = DDSCAPS_SYSTEMMEMORY | DDSCAPS_OFFSCREENPLAIN;
+    ddsd.dwWidth = mCursorWidth;
+    ddsd.dwHeight = mCursorHeight;
+
+    if (!mIsD3D8Or9)
+    {
+        HRESULT result = CreateSurface(&ddsd, &mOldCursorArea, nullptr);
+        if (GotDXError(result, "CreateSurface OldCursorArea"))
+            return RESULT_SURFACE_FAIL;
+
+        mOldCursorAreaImage = new DDImage(this);
+        mOldCursorAreaImage->SetSurface(mOldCursorArea);
+        mOldCursorAreaImage->SetImageMode(false, false);
+
+        result = CreateSurface(&ddsd, &mNewCursorArea, nullptr);
+        if (GotDXError(result, "CreateSurface NewCursorArea"))
+            return RESULT_SURFACE_FAIL;
+
+        mNewCursorAreaImage = new DDImage(this);
+        mNewCursorAreaImage->SetSurface(mNewCursorArea);
+        mNewCursorAreaImage->SetImageMode(false, false);
+    }
+
+    if (mPrimarySurface != nullptr)
+    {
+        DDSURFACEDESC ddsd2;
+        ZeroMemory(&ddsd2, sizeof(ddsd2));
+        ddsd2.dwSize = sizeof(ddsd2);
+        ddsd2.dwFlags = DDSD_PIXELFORMAT | DDSD_WIDTH | DDSD_HEIGHT;
+        mPrimarySurface->GetSurfaceDesc(&ddsd2);
+        if (ddsd2.ddpfPixelFormat.dwRGBBitCount != 16 && ddsd2.ddpfPixelFormat.dwRGBBitCount != 32)
+            return RESULT_INVALID_COLORDEPTH;
+
+        mRGBBits = ddsd2.ddpfPixelFormat.dwRGBBitCount;
+        mRedMask = ddsd2.ddpfPixelFormat.dwRBitMask;
+        mGreenMask = ddsd2.ddpfPixelFormat.dwGBitMask;
+        mBlueMask = ddsd2.ddpfPixelFormat.dwBBitMask;
+
+        for (int i = 32; i >= 0; i--)
+        {
+            if (((mRedMask >> i) & 1) != 0)
+                mRedShift = i;
+            if (((mGreenMask >> i) & 1) != 0)
+                mGreenShift = i;
+            if (((mBlueMask >> i) & 1) != 0)
+                mBlueShift = i;
+        }
+
+        for (int i = 0; i < 32; i++)
+        {
+            if ((i+mRedShift < 32) && ((mRedMask >> (i+mRedShift)) != 0))
+                mRedBits = i+1;
+            if ((i+mGreenShift < 32) && ((mGreenMask >> (i+mGreenShift)) != 0))
+                mGreenBits = i+1;
+            if ((i+mBlueShift < 32) && ((mBlueMask >> (i+mBlueShift)) != 0))
+                mBlueBits = i+1;
+        }
+
+        delete [] mRedAddTable;
+        delete [] mGreenAddTable;
+        delete [] mBlueAddTable;
+
+        int aMaxR = (1<<mRedBits) - 1;
+        int aMaxG = (1<<mGreenBits) - 1;
+        int aMaxB = (1<<mBlueBits) - 1;
+
+        mRedAddTable = new int[aMaxR*2+1];
+        mGreenAddTable = new int[aMaxG*2+1];
+        mBlueAddTable = new int[aMaxB*2+1];
+
+        for (int i = 0; i < aMaxR*2+1; i++)
+            mRedAddTable[i] = min(i, aMaxR);
+        for (int i = 0; i < aMaxG*2+1; i++)
+            mGreenAddTable[i] = min(i, aMaxG);
+        for (int i = 0; i < aMaxB*2+1; i++)
+            mBlueAddTable[i] = min(i, aMaxB);
+
+        // Create the tables that we will use to convert from
+        // internal color representation to surface representation
+        for (int i = 0; i < 256; i++)
+        {
+            mRedConvTable[i] = ((i * mRedMask) / 255) & mRedMask;
+            mGreenConvTable[i] = ((i * mGreenMask) / 255) & mGreenMask;
+            mBlueConvTable[i] = ((i * mBlueMask) / 255) & mBlueMask;
+        }
+    }
+
+    if (mIs3D)
+    {
+        if (!mIsD3D8Or9 && !mD3DInterface->InitFromDDInterface(this, nullptr, false, nullptr))
+        {
+            mErrorString = "3D init error: " + D3DInterface::sErrorString;
+            return RESULT_3D_FAIL;
+        }
+    }
+    else
+    {
+        mScreenImage = new DDImage(this);
+        mScreenImage->SetSurface(mDrawSurface);
+        mScreenImage->SetImageMode(false, false);
+    }
+
+    mInitCount++;
+    mInitialized = true;
+
+    if (mApp->mCompatCfgMachine != nullptr)
+        mApp->mCompatCfgMachine->MachineExecuteFunction("DDInterfaceReady", nullptr);
 
     return RESULT_OK;
 }
