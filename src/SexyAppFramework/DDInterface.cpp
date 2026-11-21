@@ -472,11 +472,11 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
         }
         else
         {
-            mDD->SetCooperativeLevel(mHWnd, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT | DDSCL_NOWINDOWCHANGES);
+            HRESULT result = mDD->SetCooperativeLevel(mHWnd, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN | DDSCL_ALLOWREBOOT | DDSCL_NOWINDOWCHANGES);
             if (GotDXError(result, "SetCooperativeLevel FullScreen"))
                 return RESULT_EXCLUSIVE_FAIL;
 
-            HRESULT result = mDD->SetDisplayMode(mDisplayWidth, mDisplayHeight, mFullscreenBits);
+            result = mDD->SetDisplayMode(mDisplayWidth, mDisplayHeight, mFullscreenBits);
             if (GotDXError(result, "SetDisplayMode FullScreen"))
                 return RESULT_DISPCHANGE_FAIL;
 
