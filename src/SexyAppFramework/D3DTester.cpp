@@ -35,7 +35,8 @@ bool D3DTester::DoTest()
 
 void D3DTester::SetVidMemoryConstraints(DWORD theMin, DWORD theRecommended)
 {
-    // TODO: Implement
+    mMinVidMemory = theMin;
+    mRecommendedVidMemory = theRecommended;
 }
 
 void D3DTester::TestD3D(HWND theHWND, LPDIRECTDRAW7 theDDraw)
