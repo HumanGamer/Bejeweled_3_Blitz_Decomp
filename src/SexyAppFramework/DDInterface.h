@@ -151,6 +151,7 @@ namespace Sexy
 
         DDImage* GetScreenImage();
 	    int Init(HWND theWindow, bool isWindowed);
+	    bool Redraw(Rect* theClipRect = nullptr);
 
 	    bool SetCursorImage(Image* theImage);
     };

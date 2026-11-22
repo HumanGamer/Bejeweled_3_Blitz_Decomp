@@ -687,6 +687,12 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
     return RESULT_OK;
 }
 
+bool DDInterface::Redraw(Rect *theClipRect)
+{
+    // TODO: Implement
+    return false;
+}
+
 bool DDInterface::SetCursorImage(Image *theImage)
 {
     // TODO: Implement
