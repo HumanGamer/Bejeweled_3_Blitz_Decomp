@@ -2,10 +2,13 @@
 
 #include "AutoCrit.h"
 #include "CfgMachine.h"
+#include "D3D8Interface.h"
+#include "D3D9Interface.h"
 #include "D3DInterface.h"
 #include "DDImage.h"
 #include "Debug.h"
 #include "DirectXErrorString.h"
+#include "DXSurface7.h"
 #include "SexyAppBase.h"
 
 using namespace Sexy;
@@ -378,7 +381,7 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
         {
             ulong width;
             ulong height;
-            mD3DInterface->GetBackBufferDimensions(&width, &height);
+            mD3DInterface->GetBackBufferDimensions(width, height);
 
             if (width != mDisplayWidth || height != mDisplayHeight)
             {
@@ -443,7 +446,7 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
             if (GotDXError(result, "CreateSurface Windowed Primary"))
                 return RESULT_SURFACE_FAIL;
 
-            mPrimaryDXSurface = new DXSurface7();
+            mPrimaryDXSurface = new DXSurface7(this);
             mPrimaryDXSurface->SetSurface(mPrimarySurface);
 
             DDSURFACEDESC2 ddsd2;
@@ -713,6 +716,17 @@ bool DDInterface::GotDXError(HRESULT theResult, const char *theContext)
         return false;
 }
 
+HRESULT DDInterface::CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused)
+{
+    // TODO: Implement
+    return 0;
+}
+
+void DDInterface::ClearSurface(LPDIRECTDRAWSURFACE theSurface)
+{
+    // TODO: Implement
+}
+
 bool DDInterface::Do3DTest(HWND theHWND)
 {
     if (mD3DTester == nullptr)
@@ -737,14 +751,4 @@ bool DDInterface::Do3DTest(HWND theHWND)
     }
 
     return false;
-}
-
-IDXSurface::IDXSurface()
-{
-    // TODO: Implement
-}
-
-IDXSurface::~IDXSurface()
-{
-    // TODO: Implement
 }

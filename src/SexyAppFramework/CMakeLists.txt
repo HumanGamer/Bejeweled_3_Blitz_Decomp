@@ -72,10 +72,18 @@ target_sources(${PROJECT_NAME} PRIVATE
     DirectXErrorString.h
     D3DInterface.cpp
     D3DInterface.h
+    D3D8Interface.cpp
+    D3D8Interface.h
+    D3D9Interface.cpp
+    D3D9Interface.h
     DDInterface.cpp
     DDInterface.h
     DDImage.cpp
     DDImage.h
+    IDXSurface.cpp
+    IDXSurface.h
+    DXSurface7.cpp
+    DXSurface7.h
     MemoryImage.cpp
     MemoryImage.h
     Image.cpp

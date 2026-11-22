@@ -8,5 +8,8 @@ namespace Sexy
     class MemoryImage : public Image
     {
         // TODO: Implement
+
+    public:
+        virtual void SetImageMode(bool hasTrans, bool hasAlpha);
     };
 }

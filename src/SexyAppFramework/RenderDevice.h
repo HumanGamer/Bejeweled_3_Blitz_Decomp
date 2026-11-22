@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Common.h"
+#include "DDInterface.h"
 
 namespace Sexy
 {
+    class DDInterface;
+
     class RenderDevice3D
     {
     public:
@@ -18,5 +21,9 @@ namespace Sexy
         };
 
         virtual ECapsFlags GetCapsFlags() = 0;
+
+        virtual bool InitFromDDInterface(DDInterface* ddInterface, DDInterface::EResult* result, bool testOnly, bool* is3DRecommended) = 0;
+
+        virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
     };
 }

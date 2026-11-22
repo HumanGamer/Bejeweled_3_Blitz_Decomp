@@ -8,8 +8,20 @@
 
 namespace Sexy
 {
+    class DDInterface;
+
     class DDImage : public MemoryImage
     {
+    public:
+        // TODO: Implement
+
+    public:
+        DDImage();
+        DDImage(DDInterface* ddInterface);
+        virtual ~DDImage();
+
+        virtual void SetSurface(LPDIRECTDRAWSURFACE theSurface);
+
         // TODO: Implement
     };
 }

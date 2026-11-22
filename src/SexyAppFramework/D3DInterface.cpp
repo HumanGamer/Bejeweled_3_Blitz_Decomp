@@ -2,6 +2,8 @@
 
 using namespace Sexy;
 
+std::string D3DInterface::sErrorString;
+
 D3DInterface::D3DInterface()
 {
     // TODO: Implement

@@ -13,6 +13,7 @@
 
 namespace Sexy
 {
+    class IDXSurface;
     class RenderEffectDefinition;
     class D3DObject;
     class D3DInterface;
@@ -20,16 +21,6 @@ namespace Sexy
     class SexyAppBase;
 
     typedef std::set<DDImage*> DDImageSet;
-
-    class IDXSurface
-    {
-    public:
-        ulong mImageFlags;
-
-    public:
-        IDXSurface();
-        virtual ~IDXSurface();
-    };
 
     class DDInterface : public NativeDisplay
     {
@@ -89,7 +80,7 @@ namespace Sexy
         LPDIRECTDRAW7 mDD7;
         LPDIRECTDRAWSURFACE mPrimarySurface;
         LPDIRECTDRAWSURFACE mSecondarySurface;
-        IUnknown* mDrawSurface; // TODO: Should this be LPDIRECTDRAWSURFACE?
+        LPDIRECTDRAWSURFACE mDrawSurface;
         IUnknown* mWindowScaleBuffers[4]; // TODO: Should this be LPDIRECTDRAWSURFACE?
         int mWidth;
         int mHeight;
@@ -146,6 +137,8 @@ namespace Sexy
         void Cleanup3DObjects();
 	    bool GotDXError(HRESULT theResult, const char *theContext = "");
 
+        HRESULT CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused);
+        void ClearSurface(LPDIRECTDRAWSURFACE theSurface);
         bool Do3DTest(HWND theHWND);
 
     public:
