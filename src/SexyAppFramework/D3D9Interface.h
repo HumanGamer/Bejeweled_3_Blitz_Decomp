@@ -16,6 +16,8 @@ namespace Sexy
         bool InitFromDDInterface(DDInterface *ddInterface, DDInterface::EResult *result, bool testOnly, bool *is3DRecommended) override;
 
         void GetBackBufferDimensions(ulong &width, ulong &height) override;
+
+        IUnknown *CreateSurface(int width, int height, bool flush, bool forceARGB8) override;
     };
 
     D3D9Interface* CreateD3D9Interface();

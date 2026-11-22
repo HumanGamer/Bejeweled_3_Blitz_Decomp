@@ -31,6 +31,12 @@ void D3D9Interface::GetBackBufferDimensions(ulong &width, ulong &height)
     height = 0;
 }
 
+IUnknown *D3D9Interface::CreateSurface(int width, int height, bool flush, bool forceARGB8)
+{
+    // TODO: Implement
+    return nullptr;
+}
+
 D3D9Interface* Sexy::CreateD3D9Interface()
 {
     return new D3D9Interface();

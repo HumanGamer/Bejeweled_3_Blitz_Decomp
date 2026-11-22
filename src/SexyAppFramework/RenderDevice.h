@@ -25,5 +25,7 @@ namespace Sexy
         virtual bool InitFromDDInterface(DDInterface* ddInterface, DDInterface::EResult* result, bool testOnly, bool* is3DRecommended) = 0;
 
         virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
+
+        virtual IUnknown* CreateSurface(int width, int height, bool flush, bool forceARGB8) = 0;
     };
 }

@@ -453,9 +453,9 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
             ZeroMemory(&ddsd2, sizeof(ddsd2));
             ddsd2.dwSize = sizeof(ddsd2);
             ddsd2.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
-            ddsd2.ddsCaps.dwCaps = DDSCAPS_3DDEVICE | DDSCAPS_PALETTE | DDSCAPS_FLIP | DDSCAPS_ALPHA;
+            ddsd2.ddsCaps.dwCaps = DDSCAPS_SYSTEMMEMORY | DDSCAPS_OFFSCREENPLAIN;
             if (mIs3D)
-                ddsd2.ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_ZBUFFER | DDSCAPS_PRIMARYSURFACE | DDSCAPS_PRIMARYSURFACELEFT | DDSCAPS_OFFSCREENPLAIN;
+                ddsd2.ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_3DDEVICE | DDSCAPS_OFFSCREENPLAIN;
             ddsd2.dwWidth = mWidth;
             ddsd2.dwHeight = mHeight;
             result = CreateSurface(&ddsd2, &mDrawSurface, nullptr);
@@ -718,8 +718,100 @@ bool DDInterface::GotDXError(HRESULT theResult, const char *theContext)
 
 HRESULT DDInterface::CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused)
 {
-    // TODO: Implement
-    return 0;
+    if (mIsD3D8Or9)
+    {
+        if (theDesc != nullptr)
+        {
+            if ((theDesc->dwFlags & DDSD_WIDTH | DDSD_HEIGHT) != (DDSD_WIDTH | DDSD_HEIGHT))
+            {
+#ifdef OPTIMIZE_SOFTWARE_DRAWING
+                gOptimizeSoftwareDrawing = true;
+#endif
+                return DDERR_INVALIDCAPS;
+            }
+
+            DWORD flags = 0;
+            if ((theDesc->dwFlags & DDSD_CAPS) != 0)
+                flags = (theDesc->ddsCaps.dwCaps & DDSCAPS_VIDEOMEMORY) != 0;
+
+            if (theSurface != nullptr)
+            {
+                *theSurface = (IDirectDrawSurface*)mD3DInterface->CreateSurface(theDesc->dwWidth, theDesc->dwHeight, flags, 0);
+
+#ifdef OPTIMIZE_SOFTWARE_DRAWING
+                gOptimizeSoftwareDrawing = true;
+#endif
+
+                return theSurface != nullptr ? DD_OK : DDERR_GENERIC;
+            }
+        }
+
+#ifdef OPTIMIZE_SOFTWARE_DRAWING
+        gOptimizeSoftwareDrawing = true;
+#endif
+        return DDERR_INVALIDPARAMS;
+    }
+
+    HRESULT res;
+    if (mDD7 != nullptr)
+    {
+        LPDIRECTDRAWSURFACE7 surf;
+        res = mDD7->CreateSurface(theDesc, &surf, nullptr);
+        if (!SUCCEEDED(res))
+            return res;
+
+        res = surf->QueryInterface(IID_IDirectDrawSurface, (LPVOID*)theSurface);
+        surf->Release();
+
+        if (!SUCCEEDED(res))
+            return res;
+    }
+    else
+    {
+        DDSURFACEDESC desc;
+        ZeroMemory(&desc, sizeof(desc));
+        desc.dwSize = sizeof(desc);
+        desc.dwFlags = theDesc->dwFlags;
+        desc.lPitch = theDesc->lPitch;
+        desc.dwWidth = theDesc->dwWidth;
+        desc.dwHeight = theDesc->dwHeight;
+        desc.dwAlphaBitDepth = theDesc->dwAlphaBitDepth;
+        desc.dwBackBufferCount = theDesc->dwBackBufferCount;
+        desc.dwMipMapCount = theDesc->dwMipMapCount;
+        desc.dwReserved = theDesc->dwReserved;
+        desc.lpSurface = theDesc->lpSurface;
+        desc.ddpfPixelFormat = theDesc->ddpfPixelFormat;
+
+        res = mDD->CreateSurface(&desc, theSurface, nullptr);
+        if (!SUCCEEDED(res))
+            return res;
+    }
+
+    // Make sure it's 32-bit or 16-bit
+    DDSURFACEDESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+    desc.dwSize = sizeof(desc);
+    desc.dwFlags = DDSD_PIXELFORMAT;
+    if (mPrimarySurface == nullptr)
+        return DDERR_INVALIDPARAMS;
+
+    mPrimarySurface->GetSurfaceDesc(&desc);
+
+#ifdef OPTIMIZE_SOFTWARE_DRAWING
+    // If things are stored blue low, green middle, red high, we can optimize a lot of our software rendering based on bit patterns.
+    // This of course does not matter for native data which is already in the correct order (and can be optimized similarly).
+    gOptimizeSoftwareDrawing = desc.ddpfPixelFormat.dwBBitMask < desc.ddpfPixelFormat.dwGBitMask && desc.ddpfPixelFormat.dwGBitMask < desc.ddpfPixelFormat.dwRBitMask;
+#endif
+
+    int aNumBits = desc.ddpfPixelFormat.dwRGBBitCount;
+    if (aNumBits != 16 && aNumBits != 32)
+    {
+        (*theSurface)->Release();
+        theSurface = nullptr;
+        return DDERR_INVALIDPIXELFORMAT;
+    }
+
+    return res;
 }
 
 void DDInterface::ClearSurface(LPDIRECTDRAWSURFACE theSurface)

@@ -42,6 +42,8 @@ void D3DTester::SetVidMemoryConstraints(DWORD theMin, DWORD theRecommended)
 void D3DTester::TestD3D(HWND theHWND, LPDIRECTDRAW7 theDDraw)
 {
     // TODO: Implement
+    mFailureReason = "temp";
+    mWarning = "temp";
 }
 
 int D3DTester::StaticGetVideoMemoryMB()
