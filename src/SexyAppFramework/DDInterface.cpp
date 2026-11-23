@@ -748,6 +748,26 @@ bool DDInterface::Redraw(Rect *theClipRect)
     {
         if (mWindowScaleBuffers[0] != nullptr)
         {
+            int iter = 0;
+            do
+            {
+                if (*mWindowScaleBuffers == nullptr)
+                    break;
+
+                if (iter != 3 && mWindowScaleBuffers[1] != nullptr || mIsD3D8Or9)
+                {
+                    // TODO: Implement
+                }
+                else
+                {
+                    // TODO: Implement
+                }
+
+                // TODO: Implement
+
+                iter++;
+            } while (iter < 4);
+
             // TODO: Implement
         }
 
