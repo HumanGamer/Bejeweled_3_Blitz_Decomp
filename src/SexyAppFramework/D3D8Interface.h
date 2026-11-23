@@ -18,6 +18,8 @@ namespace Sexy
         void GetBackBufferDimensions(ulong &width, ulong &height) override;
 
         IUnknown *CreateSurface(int width, int height, bool flush, bool forceARGB8) override;
+
+        bool Flush(ulong flags) override;
     };
 
     D3D8Interface* CreateD3D8Interface();

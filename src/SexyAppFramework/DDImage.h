@@ -5,6 +5,8 @@
 #include <ddraw.h>
 
 #include "SharedImage.h"
+#include "Rect.h"
+#include "Color.h"
 
 namespace Sexy
 {
@@ -14,6 +16,8 @@ namespace Sexy
     {
     public:
         // TODO: Implement
+
+        virtual void NormalFillRect(const Rect& theRect, const Color& theColor);
 
     public:
         DDImage();

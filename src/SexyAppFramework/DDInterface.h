@@ -15,12 +15,23 @@ namespace Sexy
 {
     class IDXSurface;
     class RenderEffectDefinition;
-    class D3DObject;
     class D3DInterface;
     class RenderDevice3D;
     class SexyAppBase;
 
+    class D3DObjectFrame;
+    class D3DObjectListener;
+    class D3DObject // TODO: Figure out where this is supposed to go
+    {
+    public:
+        std::string mFileName;
+        D3DObjectFrame *mFrame;
+        D3DObjectListener *mListener;
+        void* mUserData;
+    };
+
     typedef std::set<DDImage*> DDImageSet;
+    typedef std::set<D3DObject*> D3DObjectSet;
 
     class DDInterface : public NativeDisplay
     {
@@ -127,7 +138,7 @@ namespace Sexy
         DDImage* mNewCursorAreaImage;
         IDXSurface* mPrimaryDXSurface;
         std::string mErrorString;
-        std::set<D3DObject*> mD3DObjectSet;
+        D3DObjectSet mD3DObjectSet;
         std::vector<RenderEffectDefinition*> mRenderEffectDefs;
         ERenderMode mRenderMode;
         ulong mRenderModeFlags;
@@ -136,6 +147,9 @@ namespace Sexy
         void Cleanup();
         void Cleanup3DObjects();
 	    bool GotDXError(HRESULT theResult, const char *theContext = "");
+
+        void RestoreOldCursorAreaFrom(LPDIRECTDRAWSURFACE theSurface, bool adjust);
+        void DrawCursorTo(LPDIRECTDRAWSURFACE theSurface, bool adjust);
 
         HRESULT CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused);
         void ClearSurface(LPDIRECTDRAWSURFACE theSurface);

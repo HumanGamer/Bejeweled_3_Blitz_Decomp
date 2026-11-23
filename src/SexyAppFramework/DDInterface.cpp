@@ -689,8 +689,281 @@ int DDInterface::Init(HWND theWindow, bool isWindowed)
 
 bool DDInterface::Redraw(Rect *theClipRect)
 {
-    // TODO: Implement
-    return false;
+    AutoCrit anAutoCrit(mCritSect);
+
+    if (!mInitialized)
+        return false;
+
+    DDBLTFX aBltFX;
+    ZeroMemory(&aBltFX, sizeof(aBltFX));
+    aBltFX.dwSize = sizeof(aBltFX);
+
+    mInRedraw = true;
+
+    GetTickCount();
+    if (mIs3D)
+    {
+        for (D3DObjectSet::iterator anItr = mD3DObjectSet.begin(); anItr != mD3DObjectSet.end(); ++anItr)
+        {
+            D3DObject* anObject = *anItr;
+            if (anObject->mFrame == nullptr)
+                return false;
+        }
+
+        if (!D3DInterface::sErrorString.empty())
+        {
+            OutputDebugStringA(D3DInterface::sErrorString.c_str());
+            OutputDebugStringA("\r\n");
+
+            mInRedraw = false;
+            mIs3D = false;
+
+            return false;
+        }
+
+        mD3DInterface->Flush(2); // TODO: Figure out flags instead of using raw number
+    }
+
+    RECT aDestRect;
+    RECT aSrcRect;
+    if (theClipRect == nullptr || mIsWidescreen)
+    {
+        // ClipRect cannot be supported when the draw surface and
+        // primary surface are not the same size in widescreen mode.
+        aDestRect = mPresentationRect.ToRECT();
+        aSrcRect = Rect(0, 0, mWidth, mHeight).ToRECT();
+    }
+    else
+    {
+        aDestRect = theClipRect->ToRECT();
+        aSrcRect = theClipRect->ToRECT();
+    }
+
+    if ( mIsWidescreen )
+    {
+        aBltFX.dwDDFX = DDBLTFX_ARITHSTRETCHY;
+    }
+
+    if (mIsD3D8Or9)
+    {
+        if (mWindowScaleBuffers[0] != nullptr)
+        {
+            // TODO: Implement
+        }
+
+        // TODO: Implement
+    }
+
+    POINT aPoint = {0, 0};
+
+    ClientToScreen(mHWnd, &aPoint);
+    OffsetRect(&aDestRect, aPoint.x, aPoint.y);
+
+    DDSURFACEDESC aDesc;
+    ZeroMemory(&aDesc, sizeof(aDesc));
+    aDesc.dwSize = sizeof(aDesc);
+    mDrawSurface->Lock(nullptr, &aDesc, DDLOCK_SURFACEMEMORYPTR | DDLOCK_WAIT | DDLOCK_READONLY, nullptr);
+    mDrawSurface->Unlock(nullptr);
+
+    HRESULT aResult;
+    if (!mIsWindowed)
+    {
+        if (mApp->mNoDefer || !mApp->mFullScreenPageFlip)
+        {
+            aResult = mPrimarySurface->Blt(&aDestRect, mDrawSurface, &aSrcRect, DDBLT_WAIT, &aBltFX);
+            mInRedraw = false;
+            return !GotDXError(aResult, "Redraw FullScreen Blt");
+        }
+        else
+        {
+            aResult = mSecondarySurface->Blt(&aDestRect, mDrawSurface, &aSrcRect, DDBLT_WAIT, &aBltFX);
+            if (SUCCEEDED(aResult))
+            {
+                if (mIs3D && mIsWidescreen)
+                {
+                    Rect rect1;
+                    rect1.mX = 0;
+                    rect1.mY = 0;
+                    rect1.mWidth = aDestRect.left;
+                    rect1.mHeight = mDisplayHeight;
+
+                    Rect rect2;
+                    rect2.mX = aDestRect.right;
+                    rect2.mY = 0;
+                    rect2.mWidth = mDisplayWidth - aDestRect.right;
+                    rect2.mHeight = mDisplayHeight;
+
+                    if (aDestRect.left > 0)
+                    {
+                        mSecondarySurfaceImage->NormalFillRect(rect1, Color::White);
+                    }
+                    if (mDisplayWidth - aDestRect.right > 0)
+                    {
+                        mSecondarySurfaceImage->NormalFillRect(rect2, Color::White);
+                    }
+                }
+
+                mCursorX = mNextCursorX;
+                mCursorY = mNextCursorY;
+
+                DrawCursorTo(mSecondarySurface, true);
+
+                DWORD flags = DDFLIP_WAIT;
+                if (mApp->mNoVSync)
+                    flags |= DDFLIP_NOVSYNC;
+
+                mPrimarySurface->Flip(nullptr, flags);
+
+                mInRedraw = false;
+                return !GotDXError(aResult, "Redraw FullScreen Flip (2)");
+            }
+            else
+            {
+                mInRedraw = false;
+                return !GotDXError(aResult, "Redraw FullScreen Flip (1)");
+            }
+        }
+    }
+
+    //DWORD aScanLine;
+    //mDD->GetScanLine(&aScanLine);
+
+    int aScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    if (mWindowScaleBuffers[0] != nullptr)
+    {
+        LPDIRECTDRAWSURFACE** buffers = (LPDIRECTDRAWSURFACE**)mWindowScaleBuffers;
+
+        LPDIRECTDRAWSURFACE theSurface = mDrawSurface;
+
+        RECT dRect;
+        RECT sRect;
+
+        int iters = 0;
+        do
+        {
+            if (*buffers == nullptr)
+                break;
+
+            if (iters == 3 || buffers[1] == nullptr)
+            {
+                dRect.left = mPresentationRect.mX;
+                dRect.top = mPresentationRect.mY;
+                dRect.right = mPresentationRect.mX + mPresentationRect.mWidth;
+                dRect.bottom = mPresentationRect.mY + mPresentationRect.mHeight;
+            }
+            else
+            {
+                dRect.left = 0;
+                dRect.top = 0;
+                dRect.right = aSrcRect.right / 2;
+                dRect.bottom = aSrcRect.bottom / 2;
+            }
+
+            LPDIRECTDRAWSURFACE surf = (LPDIRECTDRAWSURFACE)*buffers;
+            surf->Blt(&dRect, theSurface, &sRect, DDBLT_WAIT, &aBltFX);
+
+            mDrawSurface = (LPDIRECTDRAWSURFACE)*buffers;
+
+            ++iters;
+            ++buffers;
+            aSrcRect = dRect; // TODO: Is this correct?
+        } while (iters < 4);
+    }
+
+    mCursorX = mNextCursorX;
+    mCursorY = mNextCursorY;
+
+    DrawCursorTo(mDrawSurface, false);
+
+    if (!mApp->mWaitForVSync || mApp->mSoftVSyncWait)
+    {
+LABEL_82:
+        aResult = mPrimarySurface->Blt(&aDestRect, mDrawSurface, &aSrcRect, DDBLT_WAIT, &aBltFX);
+        goto LABEL_83;
+    }
+
+    if (mScanLineFailCount >= 3)
+    {
+LABEL_81:
+        mDD->WaitForVerticalBlank(DDWAITVB_BLOCKBEGIN, nullptr);
+        goto LABEL_82;
+    }
+
+    int v59 = mApp->mHeight / 2;
+    int v93 = aDestRect.top + v59;
+    int v87x = aDestRect.top + mHeight;
+    bool v60 = false;
+    int ticks = GetTickCount();
+    DWORD scanLine = ~0x80000000;
+
+    while (true)
+    {
+        aResult = mDD->GetScanLine(&scanLine);
+        if (aResult != DD_OK)
+            break;
+        if (v93 - scanLine <= 0 || scanLine > aScreenHeight)
+            goto LABEL_78;
+        v60 = true;
+LABEL_79:
+        if (GetTickCount() - ticks >= 200)
+        {
+LABEL_80:
+            mScanLineFailCount++;
+            goto LABEL_81;
+        }
+    }
+
+    if (aResult != DDERR_VERTICALBLANKINPROGRESS)
+        goto LABEL_80;
+LABEL_78:
+    if (!v60)
+        goto LABEL_79;
+
+    RECT rDst;
+    rDst.left = aDestRect.left;
+    rDst.bottom = v93;
+    rDst.top = aDestRect.top;
+    rDst.right = aDestRect.right;
+
+    RECT rSrc;
+    rSrc.right = aSrcRect.right;
+    rSrc.left = aSrcRect.left;
+    rSrc.top = aSrcRect.top;
+    rSrc.bottom = v59;
+
+    mScanLineFailCount = 0;
+
+    mPrimarySurface->Blt(&rDst, mDrawSurface, &rSrc, DDBLT_WAIT, &aBltFX);
+
+    DWORD maxScanLine = scanLine;
+    do
+    {
+        while (mDD->GetScanLine(&scanLine) < 0);
+    } while (scanLine >= maxScanLine && v87x - scanLine > 0);
+
+    rDst.left = aDestRect.left;
+    rDst.bottom = aDestRect.bottom;
+    rDst.top = v93;
+    rDst.right = aDestRect.right;
+
+    rSrc.right = aSrcRect.right;
+    rSrc.left = aSrcRect.left;
+    rSrc.top = v59;
+    rSrc.bottom = aSrcRect.bottom;
+
+    mPrimarySurface->Blt(&rDst, mDrawSurface, &rSrc, DDBLT_WAIT, &aBltFX);
+
+LABEL_83:
+    if (mHasOldCursorArea)
+    {
+        RestoreOldCursorAreaFrom(mDrawSurface, false);
+        mHasOldCursorArea = true;
+    }
+
+    mInRedraw = false;
+
+    return GotDXError(aResult, "Redraw Windowed");
 }
 
 bool DDInterface::SetCursorImage(Image *theImage)
@@ -720,6 +993,16 @@ bool DDInterface::GotDXError(HRESULT theResult, const char *theContext)
     }
     else
         return false;
+}
+
+void DDInterface::RestoreOldCursorAreaFrom(LPDIRECTDRAWSURFACE theSurface, bool adjust)
+{
+    // TODO: Implement
+}
+
+void DDInterface::DrawCursorTo(LPDIRECTDRAWSURFACE theSurface, bool adjust)
+{
+    // TODO: Implement
 }
 
 HRESULT DDInterface::CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused)

@@ -26,6 +26,8 @@ namespace Sexy
 
         virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
 
+        virtual bool Flush(ulong flags) = 0;
+
         virtual IUnknown* CreateSurface(int width, int height, bool flush, bool forceARGB8) = 0;
     };
 }

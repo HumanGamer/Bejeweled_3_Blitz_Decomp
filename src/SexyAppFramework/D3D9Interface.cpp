@@ -37,6 +37,12 @@ IUnknown *D3D9Interface::CreateSurface(int width, int height, bool flush, bool f
     return nullptr;
 }
 
+bool D3D9Interface::Flush(ulong flags)
+{
+    // TODO: Implement
+    return false;
+}
+
 D3D9Interface* Sexy::CreateD3D9Interface()
 {
     return new D3D9Interface();

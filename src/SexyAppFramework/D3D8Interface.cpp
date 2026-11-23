@@ -37,6 +37,12 @@ IUnknown *D3D8Interface::CreateSurface(int width, int height, bool flush, bool f
     return nullptr;
 }
 
+bool D3D8Interface::Flush(ulong flags)
+{
+    // TODO: Implement
+    return false;
+}
+
 D3D8Interface* Sexy::CreateD3D8Interface()
 {
     return new D3D8Interface();
