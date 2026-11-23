@@ -117,7 +117,7 @@ void SexyApp::InitPropertiesHook()
 
     mProdName = ToString(GetString("ProdName", StringToSexyString(mProdName)));
 
-    if (!mForceFullScreen)
+    if (!mForceFullscreen)
         mIsWindowed = GetBoolean("DefaultWindowed", mIsWindowed);
 
     SexyString aNewTitle = GetString("Title", _S(""));

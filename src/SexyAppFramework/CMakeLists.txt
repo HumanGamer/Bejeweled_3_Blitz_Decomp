@@ -112,6 +112,6 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PUBLIC winmm ddraw dxguid Sexy::ImageLib Sexy::PakLib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING)
+target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING -D_CRT_SECURE_NO_WARNINGS)
 
 add_library(Sexy::AppFramework ALIAS SexyAppFramework)

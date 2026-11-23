@@ -4,6 +4,8 @@ using namespace Sexy;
 
 std::string D3DInterface::sErrorString;
 
+bool gD3DInterfacePreDrawError = false;
+
 D3DInterface::D3DInterface()
 {
     // TODO: Implement

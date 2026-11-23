@@ -176,7 +176,7 @@ namespace Sexy
         bool mIsWindowed;
         bool mIsPhysWindowed;
         bool mFullScreenWindow; // uses ChangeDisplaySettings to run fullscreen with mIsWindowed true
-        bool mForceFullScreen;
+        bool mForceFullscreen;
         bool mForceWindowed;
         bool mInitialized;
         bool mProcessInTimer;

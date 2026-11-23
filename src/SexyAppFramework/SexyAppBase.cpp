@@ -183,7 +183,7 @@ SexyAppBase::SexyAppBase()
     mNextDrawTick = timeGetTime();
     mSysCursor = true;
     mMusicVolume = 0.85;
-    mForceFullScreen = false;
+    mForceFullscreen = false;
     mSfxVolume = 0.85;
     mForceWindowed = false;
     mHasFocus = true;
@@ -1327,7 +1327,7 @@ LABEL_88:
                     mLastUserInputTick = mLastTimerTime;
                     if (wParam == VK_RETURN)
                     {
-                        if (uMsg == WM_SYSKEYDOWN && !mForceFullScreen && !mForceWindowed && mAllowAltEnter)
+                        if (uMsg == WM_SYSKEYDOWN && !mForceFullscreen && !mForceWindowed && mAllowAltEnter)
                         {
                             SwitchScreenMode(!mIsWindowed);
                             ClearKeysDown();
@@ -2092,9 +2092,9 @@ void SexyAppBase::MakeWindow()
     else
     {
         wide = false;
-        if (!mFullScreenWindow && (mHeight >= aDesktopRect.bottom - aDesktopRect.top || mWidescreenAware >= aDesktopRect.right - aDesktopRect.left))
+        if (!mFullScreenWindow && (mHeight >= aDesktopRect.bottom - aDesktopRect.top || mWidth >= aDesktopRect.right - aDesktopRect.left))
         {
-            mForceFullScreen = true;
+            mForceFullscreen = true;
             mIsWindowed = false;
         }
     }
@@ -2114,7 +2114,7 @@ void SexyAppBase::MakeWindow()
         if (wide)
         {
             if (mHeight >= mOrigScreenHeight * 0.75)
-                height = mOrigScreenHeight * 0.75;
+                height = (int)(mOrigScreenHeight * 0.75);
 
             if (mPreferredHeight != -1)
                 height = mPreferredHeight;
@@ -2125,7 +2125,7 @@ void SexyAppBase::MakeWindow()
                 num = mHeight;
 
             if (height > num)
-                height = num;
+                height = (int)num;
 
             if (mEnableWindowAspect)
             {
@@ -2292,7 +2292,7 @@ void SexyAppBase::MakeWindow()
         }
         else
         {
-            mForceFullScreen = true;
+            mForceFullscreen = true;
             SwitchScreenMode(false);
         }
 
@@ -2338,7 +2338,7 @@ void SexyAppBase::MakeWindow()
         {
             if (newHeight >= aDesktopRect.bottom - aDesktopRect.top)
             {
-                mForceFullScreen = true;
+                mForceFullscreen = true;
                 SwitchScreenMode(false);
                 return;
             }
@@ -2549,9 +2549,96 @@ bool SexyAppBase::DrawDirtyStuff()
     return false;
 }
 
+bool gIsFailing = false;
+
 void SexyAppBase::Redraw(Rect *theClipRect)
 {
-    // TODO: Implement
+    SEXY_AUTO_PERF("SexyAppBase::Redraw");
+
+    // Do mIsDrawing check because we could enter here at a bad time if any windows messages
+    //  are processed during WidgetManager->Draw
+    if (mIsDrawing || mShutdown || mMinimized)
+        return;
+
+    if (gScreenSaverActive)
+        return;
+
+    if (mShowCompatInfoMode != SHOWCOMPATINFOMODE_OFF)
+    {
+        // TODO: Implement
+    }
+
+    static DWORD aRetryTick = 0;
+    if (!mDDInterface->Redraw(theClipRect))
+    {
+        extern bool gD3DInterfacePreDrawError;
+        gD3DInterfacePreDrawError = false; // this predraw error happens naturally when ddraw is failing
+        if (!gIsFailing)
+        {
+            //gDebugStream << GetTickCount() << " Redraw failed!" << std::endl;
+            gIsFailing = true;
+        }
+
+        WINDOWPLACEMENT aWindowPlacement;
+        ZeroMemory(&aWindowPlacement, sizeof(aWindowPlacement));
+        aWindowPlacement.length = sizeof(aWindowPlacement);
+        GetWindowPlacement(mHWnd, &aWindowPlacement);
+
+
+        DWORD aTick = timeGetTime();
+        if ((mActive || (aTick-aRetryTick > 1000 && mIsPhysWindowed)) && aWindowPlacement.showCmd != SW_SHOWMINIMIZED && !mMinimized)
+        {
+            aRetryTick = aTick;
+
+            mWidgetManager->mImage = nullptr;
+
+            int aResult = InitDDInterface();
+
+			//gDebugStream << GetTickCount() << " ReInit..." << std::endl;
+
+            if (mIsWindowed && aResult == DDInterface::RESULT_INVALID_COLORDEPTH)
+            {
+                //gDebugStream << GetTickCount() << "ReInit Invalid Colordepth" << std::endl;
+                if (!mActive) // don't switch to full screen if not active app
+                    return;
+
+                SwitchScreenMode(false);
+                mForceFullscreen = true;
+                return;
+            }
+            else if (aResult == DDInterface::RESULT_3D_FAIL)
+            {
+                Set3DAccelerated(false);
+                return;
+            }
+            else if (aResult != DDInterface::RESULT_OK)
+            {
+                //gDebugStream << GetTickCount() << " ReInit Failed" << std::endl;
+                //Fail("Failed to initialize DirectDraw");
+                //Sleep(1000);
+
+                return;
+            }
+
+            ReInitImages();
+
+            mWidgetManager->mImage = mDDInterface->GetScreenImage();
+            mWidgetManager->MarkAllDirty();
+
+            mLastTime = timeGetTime();
+        }
+    }
+    else
+    {
+        if (gIsFailing)
+        {
+            //gDebugStream << GetTickCount() << " Redraw succeeded" << std::endl;
+            gIsFailing = false;
+            aRetryTick = 0;
+        }
+    }
+
+	mFPSFlipCount++;
 }
 
 bool SexyAppBase::KeyDown(KeyCode key)
@@ -2862,6 +2949,9 @@ static bool ScreenSaverWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 
 LRESULT CALLBACK SexyAppBase::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    Rect rect1;
+    Rect rect2;
+
     if (gSexyAppBase != nullptr && gSexyAppBase->IsScreenSaver())
     {
         LRESULT aResult;
@@ -3073,13 +3163,11 @@ LABEL_153:
                     double double1 = (double)(winRect.right - winRect.left) / (double)(winRect.bottom - winRect.top);
                     double double2 = (double)(winPosRight - winPosLeft) / (double)(winPosBottom - winPosTop);
 
-                    Rect rect1;
                     rect1.mX = 0;
                     rect1.mY = 0;
                     rect1.mWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
                     rect1.mHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-                    Rect rect2;
                     rect2.mX = winRect.left;
                     rect2.mY = winRect.top;
                     rect2.mHeight = winRect.bottom - winRect.top;
@@ -3296,7 +3384,7 @@ LABEL_188:
                 case WM_DESTROY:
                 {
                     char aStr[256];
-                    sprintf(aStr, "DESTROYED HWND: %d\r\n", hWnd);
+                    sprintf(aStr, "DESTROYED HWND: %p\r\n", hWnd);
                     OutputDebugStringA(aStr);
                     goto LABEL_12;
                 }
