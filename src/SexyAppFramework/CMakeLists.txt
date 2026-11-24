@@ -88,6 +88,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     MemoryImage.h
     Image.cpp
     Image.h
+    Insets.cpp
+    Insets.h
     NativeDisplay.cpp
     NativeDisplay.h
     SexyLocale.cpp

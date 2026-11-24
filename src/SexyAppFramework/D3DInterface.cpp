@@ -15,3 +15,26 @@ D3DInterface::~D3DInterface()
 {
     // TODO: Implement
 }
+
+void D3DInterface::Cleanup()
+{
+    // TODO: Implement
+}
+
+bool D3DInterface::SceneBegun()
+{
+    // TODO: Implement
+    return false;
+}
+
+IUnknown *D3DInterface::GetBackBufferSurface()
+{
+    // TODO: Implement
+    return nullptr;
+}
+
+bool D3DInterface::SetRenderTargetSurface(IUnknown *surface)
+{
+    // TODO: Implement
+    return false;
+}

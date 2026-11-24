@@ -9,6 +9,7 @@
 #include "Debug.h"
 #include "DirectXErrorString.h"
 #include "DXSurface7.h"
+#include "Insets.h"
 #include "SexyAppBase.h"
 
 using namespace Sexy;
@@ -724,6 +725,9 @@ bool DDInterface::Redraw(Rect *theClipRect)
         mD3DInterface->Flush(2); // TODO: Figure out flags instead of using raw number
     }
 
+    int wid;
+    int hei;
+
     RECT aDestRect;
     RECT aSrcRect;
     if (theClipRect == nullptr || mIsWidescreen)
@@ -732,11 +736,17 @@ bool DDInterface::Redraw(Rect *theClipRect)
         // primary surface are not the same size in widescreen mode.
         aDestRect = mPresentationRect.ToRECT();
         aSrcRect = Rect(0, 0, mWidth, mHeight).ToRECT();
+
+        wid = mWidth;
+        hei = mHeight;
     }
     else
     {
         aDestRect = theClipRect->ToRECT();
         aSrcRect = theClipRect->ToRECT();
+
+        wid = theClipRect->mX + theClipRect->mWidth;
+        hei = theClipRect->mY + theClipRect->mHeight;
     }
 
     if ( mIsWidescreen )
@@ -746,6 +756,9 @@ bool DDInterface::Redraw(Rect *theClipRect)
 
     if (mIsD3D8Or9)
     {
+        RECT srcRect2 = aSrcRect;
+
+        LPUNKNOWN ddSurf = mDrawSurface;
         if (mWindowScaleBuffers[0] != nullptr)
         {
             int iter = 0;
@@ -754,24 +767,135 @@ bool DDInterface::Redraw(Rect *theClipRect)
                 if (*mWindowScaleBuffers == nullptr)
                     break;
 
+                RECT r0;
                 if (iter != 3 && mWindowScaleBuffers[1] != nullptr || mIsD3D8Or9)
                 {
-                    // TODO: Implement
+                    r0.left = 0;
+                    r0.top = 0;
+                    r0.right = wid / 2;
+                    r0.bottom = hei / 2;
                 }
                 else
                 {
-                    // TODO: Implement
+                    r0.left = mPresentationRect.mX;
+                    r0.top = mPresentationRect.mY;
+                    r0.right = mPresentationRect.mX + mPresentationRect.mWidth;
+                    r0.bottom = mPresentationRect.mY + mPresentationRect.mHeight;
                 }
 
-                // TODO: Implement
+                mD3DInterface->SetRenderTargetSurface(*mWindowScaleBuffers);
 
+                Rect r;
+                r.mX = 0;
+                r.mY = 0;
+                r.mWidth = r0.right;
+                r.mHeight = r0.bottom;
+
+                Rect r2;
+                r2.mX = 0;
+                r2.mY = 0;
+                r2.mWidth = aSrcRect.right;
+                r2.mHeight = aSrcRect.bottom;
+
+                mD3DInterface->BltSurface(ddSurf, r, r2);
+
+                ddSurf = mWindowScaleBuffers[iter];
                 iter++;
-            } while (iter < 4);
 
-            // TODO: Implement
+                srcRect2 = r0;
+            } while (iter < 4);
         }
 
-        // TODO: Implement
+        float f1 = 1.0f;
+        float f2 = 1.0f;
+
+        if (ddSurf == nullptr)
+            goto LABEL_51;
+
+        mD3DInterface->SetRenderTargetSurface(mD3DInterface->GetBackBufferSurface());
+
+        if (!mIsWindowed)
+            goto LABEL_48;
+
+        if (aDestRect.right - aDestRect.left > srcRect2.left || aDestRect.bottom - aDestRect.top > srcRect2.bottom - srcRect2.top)
+        {
+            Rect r3;
+            r3.mWidth = srcRect2.right - srcRect2.left;
+            r3.mHeight = srcRect2.bottom - srcRect2.top;
+            r3.mY = srcRect2.top;
+            r3.mX = srcRect2.left;
+
+            Rect r4;
+            r4.mWidth = srcRect2.right - srcRect2.left;
+            r4.mHeight = srcRect2.bottom - srcRect2.top;
+            r4.mY = srcRect2.bottom;
+            r4.mX = srcRect2.left;
+
+            mD3DInterface->BltSurface(ddSurf, r3, r4);
+
+            if (aDestRect.right - aDestRect.left > srcRect2.right - srcRect2.left)
+                f1 = (double)(aDestRect.right - aDestRect.left) / (double)(srcRect2.right - srcRect2.left);
+
+            if (aDestRect.bottom - aDestRect.top > srcRect2.bottom - srcRect2.top)
+                f2 = (double)(aDestRect.bottom - aDestRect.top) / (double)(srcRect2.bottom - srcRect2.top);
+
+            goto LABEL_51;
+        }
+
+        if (!mIsWindowed)
+        {
+LABEL_48:
+            if (mIsWidescreen && !mApp->mWidescreenAware)
+            {
+                Color color(0, 0, 0, 0);
+                mD3DInterface->ClearColorBuffer(color);
+            }
+        }
+
+        Rect r5;
+        r5.mX = aDestRect.left;
+        r5.mY = aDestRect.top;
+        r5.mWidth = aDestRect.right - aDestRect.left;
+        r5.mHeight = aDestRect.bottom - aDestRect.top;
+
+        Rect r6;
+        r6.mX = srcRect2.left;
+        r6.mY = srcRect2.top;
+        r6.mWidth = srcRect2.right - srcRect2.left;
+        r6.mHeight = srcRect2.bottom - srcRect2.top;
+
+        mD3DInterface->BltSurface(ddSurf, r5, r6);
+
+        srcRect2 = aDestRect;
+LABEL_51:
+
+        mCursorX = mNextCursorX;
+        mCursorY = mNextCursorY;
+
+        if (!mInRedrawCursor && mD3DInterface->SceneBegun())
+        {
+            int oldCursorX = mCursorX;
+            int oldCursorY = mCursorY;
+            mCursorX /= f1;
+            mCursorY /= f2;
+            DrawCursorTo(nullptr, false);
+            mCursorX = oldCursorX;
+            mCursorY = oldCursorY;
+        }
+
+        mD3DInterface->Flush(2); // TODO: Figure out flags instead of raw number
+
+        bool success = mD3DInterface->Present(&srcRect2, &aDestRect);
+        mD3DInterface->SetRenderTargetSurface(mDrawSurface);
+        mInRedraw = false;
+
+        if (!D3DInterface::sErrorString.empty())
+        {
+            OutputDebugStringA(D3DInterface::sErrorString.c_str());
+            OutputDebugStringA("\r\n");
+        }
+
+        return success;
     }
 
     POINT aPoint = {0, 0};

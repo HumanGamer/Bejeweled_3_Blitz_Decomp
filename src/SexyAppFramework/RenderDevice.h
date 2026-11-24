@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Color.h"
 #include "Common.h"
 #include "DDInterface.h"
 
@@ -23,11 +24,19 @@ namespace Sexy
         virtual ECapsFlags GetCapsFlags() = 0;
 
         virtual bool InitFromDDInterface(DDInterface* ddInterface, DDInterface::EResult* result, bool testOnly, bool* is3DRecommended) = 0;
+        virtual void Cleanup() = 0;
+        virtual bool Flush(ulong flags) = 0;
+        virtual bool Present(const RECT* src, const RECT* dst) = 0;
 
         virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
+        virtual bool SceneBegun() = 0;
 
-        virtual bool Flush(ulong flags) = 0;
-
+        virtual IUnknown* GetBackBufferSurface() = 0;
         virtual IUnknown* CreateSurface(int width, int height, bool flush, bool forceARGB8) = 0;
+        virtual bool CanBltSurface(bool unknown) = 0; // TODO: Figure out argument name
+        virtual void BltSurface(IUnknown* surface, const Rect& src, const Rect& dst) = 0;
+        virtual bool SetRenderTargetSurface(IUnknown* surface) = 0;
+
+        virtual void ClearColorBuffer(const Color& color) = 0;
     };
 }

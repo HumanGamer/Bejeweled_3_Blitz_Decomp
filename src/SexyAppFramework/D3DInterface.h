@@ -11,6 +11,14 @@ namespace Sexy
         D3DInterface();
         virtual ~D3DInterface();
 
+        void Cleanup() override;
+
+        bool SceneBegun() override;
+
+        IUnknown *GetBackBufferSurface() override;
+
+        bool SetRenderTargetSurface(IUnknown *surface) override;
+
         static std::string sErrorString;
     };
 }
