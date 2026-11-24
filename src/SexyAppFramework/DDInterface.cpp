@@ -1151,6 +1151,8 @@ void DDInterface::DrawCursorTo(LPDIRECTDRAWSURFACE theSurface, bool adjust)
 
 HRESULT DDInterface::CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused)
 {
+    AutoCrit aCrit(mCritSect);
+
     if (mIsD3D8Or9)
     {
         if (theDesc != nullptr)
