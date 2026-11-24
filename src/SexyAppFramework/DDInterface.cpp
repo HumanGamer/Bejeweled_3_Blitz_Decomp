@@ -1151,6 +1151,8 @@ void DDInterface::DrawCursorTo(LPDIRECTDRAWSURFACE theSurface, bool adjust)
 
 HRESULT DDInterface::CreateSurface(DDSURFACEDESC2 *theDesc, LPDIRECTDRAWSURFACE *theSurface, void* unused)
 {
+    // TODO: Was AutoCrit here in the original? It's hard to tell.
+    // TODO: It's in PopCapFramework 1.3, but not in the binary. Could be optimization?
     AutoCrit aCrit(mCritSect);
 
     if (mIsD3D8Or9)
