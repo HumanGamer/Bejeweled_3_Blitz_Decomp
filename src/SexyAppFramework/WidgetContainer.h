@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Flags.h"
 #include "Rect.h"
 
 namespace Sexy
@@ -14,8 +15,11 @@ namespace Sexy
     class WidgetContainer
     {
     public:
-        // TODO: Implement
-
+        WidgetList mWidgets;
+        WidgetManager* mWidgetManager;
+        WidgetContainer* mParent;
+        bool mUpdateIteratorModified;
+        WidgetList::iterator mUpdateIterator;
         uint mLastWMUpdateCount;
         int mUpdateCnt;
         bool mDirty;
@@ -25,10 +29,26 @@ namespace Sexy
         int mHeight;
         bool mHasAlpha;
         bool mClip;
+        FlagsMod mWidgetFlagsMod;
+        int mPriority;
+        int mZOrder;
 
-        // TODO: Implement
+    public:
+        Widget* GetWidgetAtHelper(int x, int y, int theFlags, bool* found, int* theWidgetX, int* theWidgetY);
+
+    public:
+        WidgetContainer();
+        virtual ~WidgetContainer();
+
+        virtual Rect GetRect();
+        virtual bool Intersects(WidgetContainer* theWidget);
+
+        virtual void AddWidget(Widget* theWidget);
+        virtual void RemoveWidget(Widget* theWidget);
 
         virtual void MarkAllDirty();
+
+        virtual Point GetAbsPos(); // relative to top level
 
         // TODO: Implement
 

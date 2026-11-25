@@ -109,6 +109,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     DSoundManager.h
     MTRand.cpp
     MTRand.h
+    Flags.cpp
+    Flags.h
     PerfTimer.cpp
     PerfTimer.h
     Debug.cpp
