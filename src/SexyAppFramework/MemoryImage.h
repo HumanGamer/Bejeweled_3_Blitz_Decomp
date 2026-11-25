@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Image.h"
+#include "RenderDevice.h"
 
 #define OPTIMIZE_SOFTWARE_DRAWING
 #ifdef OPTIMIZE_SOFTWARE_DRAWING
@@ -10,11 +11,86 @@ extern bool gOptimizeSoftwareDrawing;
 
 namespace Sexy
 {
-    class MemoryImage : public Image
+    class SexyAppBase;
+
+    class MemoryImage : public Image, public RenderDevice
     {
-        // TODO: Implement
+    public:
+        ulong* mBits;
+        int mBitsChangedCount;
+
+        ulong* mColorTable;
+        uchar* mColorIndices;
+
+        bool mForcedMode;
+        bool mHasTrans;
+        bool mHasAlpha;
+        bool mIsVolatile;
+        bool mPurgeBits;
+        bool mWantPal;
+
+        ulong* mNativeAlphaData;
+        uchar* mRLAlphaData;
+        uchar* mRLAdditiveData;
+
+        bool mBitsChanged;
+        SexyAppBase* mApp;
+
+        struct TriRep
+        {
+            struct Tri
+            {
+                struct Point
+                {
+                    float u;
+                    float v;
+                };
+
+                union
+                {
+                    struct
+                    {
+                        Point p0;
+                        Point p1;
+                        Point p2;
+                    };
+
+                    Point p[3];
+                };
+            };
+
+            struct Level
+            {
+                struct Region
+                {
+                    Rect mRect;
+                    std::vector<Tri> mTris;
+                };
+                int mDetailX;
+                int mDetailY;
+                int mRegionWidth;
+                int mRegionHeight;
+                std::vector<Region> mRegions;
+            };
+            std::vector<Level> mLevels;
+        };
+
+        TriRep mNormalTriRep;
+        TriRep mAdditiveTriRep;
 
     public:
+        // TODO: Implement
+
+        virtual void CommitBits();
+
+    public:
+        MemoryImage();
+        MemoryImage(SexyAppBase* theApp);
+        MemoryImage(const MemoryImage& theMemoryImage);
+        virtual ~MemoryImage();
+
+        virtual ulong* GetBits();
+
         virtual void SetImageMode(bool hasTrans, bool hasAlpha);
     };
 }

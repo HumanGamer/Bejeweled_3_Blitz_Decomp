@@ -8,7 +8,20 @@ namespace Sexy
 {
     class DDInterface;
 
-    class RenderDevice3D
+    class RenderDevice
+    {
+    public:
+        struct Span
+        {
+            int mY;
+            int mX;
+            int mWidth;
+        };
+
+        // TODO: Implement
+    };
+
+    class RenderDevice3D : public RenderDevice
     {
     public:
         enum ECapsFlags

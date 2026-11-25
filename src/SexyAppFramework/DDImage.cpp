@@ -22,6 +22,15 @@ void DDImage::SetSurface(LPDIRECTDRAWSURFACE theSurface)
     // TODO: Implement
 }
 
+void DDImage::CommitBits()
+{
+    if (mSurface == nullptr)
+    {
+        MemoryImage::CommitBits();
+        return;
+    }
+}
+
 void DDImage::NormalFillRect(const Rect &theRect, const Color &theColor)
 {
     // TODO: Implement

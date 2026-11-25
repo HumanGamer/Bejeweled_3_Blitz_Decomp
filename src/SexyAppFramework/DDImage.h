@@ -10,12 +10,25 @@
 
 namespace Sexy
 {
+    class IDXSurface;
     class DDInterface;
 
     class DDImage : public MemoryImage
     {
     public:
+        DDInterface* mDDInterface;
+        bool mSurfaceSet;
+        bool mNoLock;
+        bool mWantDDSurface;
+        bool mDrawToBits;
+        IDXSurface* mSurface;
+        int mLockCount;
+        DDSURFACEDESC mLockedSurfaceDesc;
+    public:
+
         // TODO: Implement
+
+        void CommitBits() override;
 
         virtual void NormalFillRect(const Rect& theRect, const Color& theColor);
 
