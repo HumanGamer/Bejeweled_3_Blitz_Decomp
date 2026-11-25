@@ -30,6 +30,7 @@ namespace Sexy
         bool mIsVolatile;
         bool mPurgeBits;
         bool mWantPal;
+        bool mDither16;
 
         ulong* mNativeAlphaData;
         uchar* mRLAlphaData;
@@ -79,6 +80,9 @@ namespace Sexy
 
         TriRep mNormalTriRep;
         TriRep mAdditiveTriRep;
+
+    private:
+        void Init();
 
     public:
         // TODO: Implement

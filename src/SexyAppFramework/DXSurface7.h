@@ -32,4 +32,7 @@ namespace Sexy
         void GetDimensions(int* width, int* height) override;
         HRESULT Blt(LPRECT lpDestRect, void* lpDDSrcSurface, LPRECT lpSrcRect, DWORD dwFlags, LPDDBLTFX lpDDBltFx) override;
     };
+
 }
+
+Sexy::DXSurface7* CreateDXSurface7(Sexy::DDInterface* ddInterface);

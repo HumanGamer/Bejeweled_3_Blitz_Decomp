@@ -501,6 +501,9 @@ namespace Sexy
 	    void Set3DAccelerated(bool is3D, bool reinit = true);
 	    virtual void Done3dTesting();
 
+        void AddMemoryImage(MemoryImage* theMemoryImage);
+        void RemoveMemoryImage(MemoryImage* theMemoryImage);
+	    void Remove3DData(MemoryImage* theMemoryImage);
         virtual void SwitchScreenMode();
         virtual void SwitchScreenMode(bool wantWindowed);
         virtual void SwitchScreenMode(bool wantWindowed, bool is3d, bool force = false);

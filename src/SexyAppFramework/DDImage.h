@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "MemoryImage.h"
+
 #include <ddraw.h>
 
 #include "SharedImage.h"
@@ -24,11 +25,16 @@ namespace Sexy
         IDXSurface* mSurface;
         int mLockCount;
         DDSURFACEDESC mLockedSurfaceDesc;
+
+    private:
+        void Init();
+
     public:
 
         // TODO: Implement
 
         void CommitBits() override;
+        ulong *GetBits() override;
 
         virtual void NormalFillRect(const Rect& theRect, const Color& theColor);
 

@@ -1116,6 +1116,28 @@ bool DDInterface::SetCursorImage(Image *theImage)
     return false;
 }
 
+void DDInterface::AddDDImage(DDImage* theDDImage)
+{
+    AutoCrit anAutoCrit(mCritSect);
+
+    mDDImageSet.insert(theDDImage);
+}
+
+void DDInterface::RemoveDDImage(DDImage* theDDImage)
+{
+    AutoCrit anAutoCrit(mCritSect);
+
+    DDImageSet::iterator anItr = mDDImageSet.find(theDDImage);
+    if (anItr != mDDImageSet.end())
+        mDDImageSet.erase(anItr);
+}
+
+void DDInterface::Remove3DData(MemoryImage *theImage) // for 3d texture cleanup
+{
+    if (mD3DInterface != nullptr)
+	    mD3DInterface->RemoveImageRenderData(theImage);
+}
+
 void DDInterface::Cleanup()
 {
     // TODO: Implement

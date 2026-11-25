@@ -312,3 +312,8 @@ HRESULT DXSurface7::Blt(LPRECT lpDestRect, void* lpDDSrcSurface, LPRECT lpSrcRec
 
     return -1;
 }
+
+DXSurface7* CreateDXSurface7(DDInterface* ddInterface)
+{
+    return new DXSurface7(ddInterface);
+}

@@ -44,6 +44,8 @@ namespace Sexy
         virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
         virtual bool SceneBegun() = 0;
 
+        virtual void RemoveImageRenderData(MemoryImage* theImage) = 0;
+
         virtual IUnknown* GetBackBufferSurface() = 0;
         virtual IUnknown* CreateSurface(int width, int height, bool flush, bool forceARGB8) = 0;
         virtual bool CanBltSurface(bool unknown) = 0; // TODO: Figure out argument name

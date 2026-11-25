@@ -84,6 +84,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     IDXSurface.h
     DXSurface7.cpp
     DXSurface7.h
+    DXSurface8.cpp
+    DXSurface8.h
+    DXSurface9.cpp
+    DXSurface9.h
     MemoryImage.cpp
     MemoryImage.h
     Image.cpp
@@ -112,7 +116,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     memmgr.h
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC winmm ddraw dxguid Sexy::ImageLib Sexy::PakLib)
+target_link_libraries(${PROJECT_NAME} PUBLIC winmm ddraw dxguid dsound d3d8lib d3d9 Sexy::ImageLib Sexy::PakLib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC -D_USE_WIDE_STRING -D_CRT_SECURE_NO_WARNINGS)
 

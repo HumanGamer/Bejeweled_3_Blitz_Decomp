@@ -15,6 +15,8 @@ namespace Sexy
 
         bool SceneBegun() override;
 
+        void RemoveImageRenderData(MemoryImage *theImage) override;
+
         IUnknown *GetBackBufferSurface() override;
 
         bool SetRenderTargetSurface(IUnknown *surface) override;

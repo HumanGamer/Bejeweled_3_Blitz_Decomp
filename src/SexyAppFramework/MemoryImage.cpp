@@ -1,5 +1,7 @@
 #include "MemoryImage.h"
 
+#include "SexyAppBase.h"
+
 using namespace Sexy;
 
 #ifdef OPTIMIZE_SOFTWARE_DRAWING
@@ -8,12 +10,16 @@ bool gOptimizeSoftwareDrawing = false;
 
 MemoryImage::MemoryImage()
 {
-    // TODO: Implement
+    mApp = gSexyAppBase;
+
+    Init();
 }
 
 MemoryImage::MemoryImage(SexyAppBase *theApp)
 {
-    // TODO: Implement
+    mApp = theApp;
+
+    Init();
 }
 
 MemoryImage::MemoryImage(const MemoryImage &theMemoryImage)
@@ -23,7 +29,38 @@ MemoryImage::MemoryImage(const MemoryImage &theMemoryImage)
 
 MemoryImage::~MemoryImage()
 {
-    // TODO: Implement
+    mApp->RemoveMemoryImage(this);
+
+    delete [] mBits;
+    delete [] mNativeAlphaData;
+    delete [] mRLAlphaData;
+    delete [] mRLAdditiveData;
+    delete [] mColorIndices;
+    delete [] mColorTable;
+}
+
+void MemoryImage::Init()
+{
+    mBits = nullptr;
+    mColorTable = nullptr;
+    mColorIndices = nullptr;
+
+    mNativeAlphaData = nullptr;
+    mRLAlphaData = nullptr;
+    mRLAdditiveData = nullptr;
+    mHasTrans = false;
+    mHasAlpha = false;
+    mBitsChanged = false;
+    mForcedMode = false;
+    mIsVolatile = false;
+
+    mBitsChangedCount = 0;
+
+    mPurgeBits = false;
+    mWantPal = false;
+    mDither16 = false;
+
+    mApp->AddMemoryImage(this);
 }
 
 void MemoryImage::CommitBits()
@@ -39,5 +76,7 @@ ulong *MemoryImage::GetBits()
 
 void MemoryImage::SetImageMode(bool hasTrans, bool hasAlpha)
 {
-    // TODO: Implement
+    mForcedMode = true;
+    mHasTrans = hasTrans;
+    mHasAlpha = hasAlpha;
 }

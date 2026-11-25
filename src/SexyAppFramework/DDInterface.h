@@ -144,6 +144,10 @@ namespace Sexy
         ulong mRenderModeFlags;
 
     public:
+        void AddDDImage(DDImage* theDDImage);
+        void RemoveDDImage(DDImage* theDDImage);
+	    void Remove3DData(MemoryImage* theImage); // for 3d texture cleanup
+
         void Cleanup();
         void Cleanup3DObjects();
 	    bool GotDXError(HRESULT theResult, const char *theContext = "");

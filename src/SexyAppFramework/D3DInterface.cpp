@@ -27,6 +27,11 @@ bool D3DInterface::SceneBegun()
     return false;
 }
 
+void D3DInterface::RemoveImageRenderData(MemoryImage *theImage)
+{
+    // TODO: Implement
+}
+
 IUnknown *D3DInterface::GetBackBufferSurface()
 {
     // TODO: Implement

@@ -4,6 +4,9 @@
 
 #include <d3d.h>
 
+struct IDirect3DDevice7;
+struct IDirect3D7;
+
 namespace Sexy
 {
     ///////////////////////////////////////////////////////////////////////////////
@@ -30,8 +33,8 @@ namespace Sexy
         void FillRect(int x, int y, int theWidth, int theHeight, DWORD theColor);
         void CopyToTexture8888(LPDIRECTDRAWSURFACE7 theTexture, int offx, int offy, int texWidth, int texHeight);
         void CopyToTexture4444(LPDIRECTDRAWSURFACE7 theTexture, int offx, int offy, int texWidth, int texHeight);
-        void DrawPieceToDevice(LPDIRECT3DDEVICE7 theDevice, LPDIRECTDRAWSURFACE7 theTexture, float x, float y, int offx, int offy, int texWidth, int texHeight, DWORD theColor);
-        void DrawToDevice(LPDIRECT3DDEVICE7 theDevice, LPDIRECTDRAWSURFACE7 theTexture, int x, int y, DWORD theColor = 0xffffffff);
+        void DrawPieceToDevice(IDirect3DDevice7* theDevice, LPDIRECTDRAWSURFACE7 theTexture, float x, float y, int offx, int offy, int texWidth, int texHeight, DWORD theColor);
+        void DrawToDevice(IDirect3DDevice7* theDevice, LPDIRECTDRAWSURFACE7 theTexture, int x, int y, DWORD theColor = 0xffffffff);
         bool CompareEqual(const D3DTestImage &theImage) const;
 
         DWORD* GetBits() { return mBits; }
@@ -55,8 +58,8 @@ namespace Sexy
         LPDIRECTDRAWSURFACE7	mPrimarySurface;
         LPDIRECTDRAWSURFACE7	mTextureSurface;
         LPDIRECTDRAWSURFACE7	mTextureSurface2;
-        LPDIRECT3D7				mD3D7;
-        LPDIRECT3DDEVICE7		mD3DDevice7;
+        IDirect3D7*				mD3D7;
+        IDirect3DDevice7*		mD3DDevice7;
         HKEY					mRegKey;
         GUID					mDisplayGUID;
         std::string				mDisplayDriver;

@@ -7,6 +7,7 @@
 #include <direct.h>
 #include <process.h>
 
+#include "AutoCrit.h"
 #include "BassMusicInterface.h"
 #include "CfgMachine.h"
 #include "DDImage.h"
@@ -2849,6 +2850,28 @@ void SexyAppBase::Set3DAccelerated(bool is3D, bool reinit)
 }
 
 void SexyAppBase::Done3dTesting() {}
+
+void SexyAppBase::AddMemoryImage(MemoryImage *theMemoryImage)
+{
+    AutoCrit anAutoCrit(mDDInterface->mCritSect);
+    mMemoryImageSet.insert(theMemoryImage);
+}
+
+void SexyAppBase::RemoveMemoryImage(MemoryImage *theMemoryImage)
+{
+    AutoCrit anAutoCrit(mDDInterface->mCritSect);
+    MemoryImageSet::iterator anItr = mMemoryImageSet.find(theMemoryImage);
+    if (anItr != mMemoryImageSet.end())
+        mMemoryImageSet.erase(anItr);
+
+    Remove3DData(theMemoryImage);
+}
+
+void SexyAppBase::Remove3DData(MemoryImage *theMemoryImage)
+{
+    if (mDDInterface)
+        mDDInterface->Remove3DData(theMemoryImage);
+}
 
 void SexyAppBase::SwitchScreenMode()
 {
