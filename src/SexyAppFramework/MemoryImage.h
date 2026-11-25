@@ -11,6 +11,8 @@ extern bool gOptimizeSoftwareDrawing;
 
 namespace Sexy
 {
+    const ulong MEMORYCHECK_ID = 0x4BEEFADE;
+
     class SexyAppBase;
 
     class MemoryImage : public Image, public RenderDevice

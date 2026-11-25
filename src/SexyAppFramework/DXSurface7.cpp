@@ -196,8 +196,67 @@ void DXSurface7::Release()
 
 ulong* DXSurface7::GetBits(DDImage* image)
 {
-    // TODO: Implement
-    return nullptr;
+    DDSURFACEDESC lockedSurfaceDesc;
+    ZeroMemory(&lockedSurfaceDesc, sizeof(lockedSurfaceDesc));
+    lockedSurfaceDesc.dwSize = sizeof(lockedSurfaceDesc);
+
+    HRESULT aResult = mSurface->Lock(nullptr, &lockedSurfaceDesc, DDLOCK_WAIT, nullptr);
+    if (FAILED(aResult))
+        return nullptr;
+
+    ulong* bits = new ulong[image->mWidth * image->mHeight + 1];
+    bits[image->mWidth * image->mHeight] = MEMORYCHECK_ID;
+
+    if (lockedSurfaceDesc.ddpfPixelFormat.dwRGBBitCount == 16)
+    {
+        ushort* aSrcPixelsRow = (ushort*) lockedSurfaceDesc.lpSurface;
+        ulong* aDest = bits;
+
+        for (int y = 0; y < image->mHeight; y++)
+        {
+            ushort* aSrcPixels = aSrcPixelsRow;
+
+            for (int x = 0; x < image->mWidth; x++)
+            {
+                ulong src = *(aSrcPixels++);
+
+                int r = ((src >> mDDInterface->mRedShift << (8 - mDDInterface->mRedBits)) & 0xFF);
+                int g = ((src >> mDDInterface->mGreenShift << (8 - mDDInterface->mGreenBits)) & 0xFF);
+                int b = ((src >> mDDInterface->mBlueShift << (8 - mDDInterface->mBlueBits)) & 0xFF);
+
+                *aDest++ = 0xFF000000 | (r << 16) | (g << 8) | (b);
+            }
+
+            aSrcPixelsRow += lockedSurfaceDesc.lPitch/2;
+        }
+    }
+    else if (lockedSurfaceDesc.ddpfPixelFormat.dwRGBBitCount == 32)
+    {
+        ulong* aSrcPixelsRow = (ulong*) lockedSurfaceDesc.lpSurface;
+        ulong* aDest = bits;
+
+        for (int y = 0; y < image->mHeight; y++)
+        {
+            ulong* aSrcPixels = aSrcPixelsRow;
+
+            for (int x = 0; x < image->mWidth; x++)
+            {
+                ulong src = *(aSrcPixels++);
+
+                int r = (src >> mDDInterface->mRedShift << (8 - mDDInterface->mRedBits)) & 0xFF;
+                int g = (src >> mDDInterface->mGreenShift << (8 - mDDInterface->mGreenBits)) & 0xFF;
+                int b = (src >> mDDInterface->mBlueShift << (8 - mDDInterface->mBlueBits)) & 0xFF;
+
+                *aDest++ = 0xFF000000 | (r << 16) | (g << 8) | (b);
+            }
+
+            aSrcPixelsRow += lockedSurfaceDesc.lPitch/4;
+        }
+    }
+
+    mSurface->Unlock(nullptr);
+
+    return bits;
 }
 
 HDC DXSurface7::GetDC()
