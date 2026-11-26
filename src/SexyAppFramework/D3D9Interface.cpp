@@ -43,6 +43,12 @@ bool D3D9Interface::InitFromDDInterface(DDInterface *ddInterface, DDInterface::E
     return false;
 }
 
+std::string D3D9Interface::GetInfoString(EInfoString infoType)
+{
+    // TODO: Implement
+    return "";
+}
+
 void D3D9Interface::GetBackBufferDimensions(ulong &width, ulong &height)
 {
     // TODO: Implement
@@ -50,15 +56,15 @@ void D3D9Interface::GetBackBufferDimensions(ulong &width, ulong &height)
     height = 0;
 }
 
-bool D3D9Interface::CanBltSurface(bool unknown)
-{
-    return true;
-}
-
 IUnknown *D3D9Interface::CreateSurface(int width, int height, bool flush, bool forceARGB8)
 {
     // TODO: Implement
     return nullptr;
+}
+
+bool D3D9Interface::CanBltSurface(bool unknown)
+{
+    return true;
 }
 
 void D3D9Interface::BltSurface(IUnknown *surface, const Rect &src, const Rect &dst)

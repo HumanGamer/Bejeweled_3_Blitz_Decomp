@@ -43,6 +43,12 @@ bool D3D8Interface::InitFromDDInterface(DDInterface *ddInterface, DDInterface::E
     return false;
 }
 
+std::string D3D8Interface::GetInfoString(EInfoString infoType)
+{
+    // TODO: Implement
+    return "";
+}
+
 void D3D8Interface::GetBackBufferDimensions(ulong &width, ulong &height)
 {
     // TODO: Implement

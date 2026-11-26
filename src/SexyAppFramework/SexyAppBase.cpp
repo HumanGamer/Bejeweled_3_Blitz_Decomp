@@ -7,6 +7,8 @@
 #include <direct.h>
 #include <process.h>
 
+#include <utility>
+
 #include "AutoCrit.h"
 #include "BassMusicInterface.h"
 #include "CfgMachine.h"
@@ -15,6 +17,7 @@
 #include "Debug.h"
 #include "DSoundManager.h"
 #include "FModMusicInterface.h"
+#include "Graphics.h"
 #include "KeyCodes.h"
 #include "MusicInterface.h"
 #include "PerfTimer.h"
@@ -24,6 +27,7 @@
 #include "RenderDevice.h"
 #include "ResourceManager.h"
 #include "SexyLocale.h"
+#include "SysFont.h"
 #include "WidgetManager.h"
 
 using namespace Sexy;
@@ -1027,6 +1031,12 @@ void SexyAppBase::SetCursor(int theCursorNum)
 void SexyAppBase::CleanSharedImages()
 {
     // TODO: Implement
+}
+
+SharedRenderTarget::Pool *SexyAppBase::GetSharedRenderTargetPool()
+{
+    // TODO: Implement
+    return nullptr;
 }
 
 void SexyAppBase::RehupFocus()
@@ -2566,7 +2576,211 @@ void SexyAppBase::Redraw(Rect *theClipRect)
 
     if (mShowCompatInfoMode != SHOWCOMPATINFOMODE_OFF)
     {
-        // TODO: Implement
+        DDImage* screenImage = mDDInterface->GetScreenImage();
+        Graphics graphics(screenImage);
+
+        static SysFont sTahomaFont(this, "Tahoma", 12);
+        graphics.SetFont(&sTahomaFont);
+
+        struct InfoString
+        {
+            SexyString mString;
+            Color mColor;
+
+            InfoString(const SexyString& string, const Color &color) : mString(string), mColor(color) {}
+        };
+        std::vector<InfoString> lineList;
+
+        __time64_t theTime;
+        _time64(&theTime);
+
+        tm timeNum{};
+        _localtime64_s(&timeNum, &theTime);
+
+        SexyString time = _wasctime(&timeNum);
+        SexyString version = ToSexyString(mProductVersion);
+
+        lineList.emplace_back(StrFormat(
+            _S("Game Version: %s, Current Time: %s, UpdateCount: %d"),
+                version.c_str(),
+                time.c_str(),
+                mUpdateCount
+            ), Color::White);
+
+        SexyString graphicsInfo;
+        if (mDDInterface->mIsWidescreen)
+            graphicsInfo += _S("Wide ");
+
+        if (mDDInterface->mIsWindowed)
+            graphicsInfo += _S("Windowed ");
+        else
+            graphicsInfo += _S("Fullscreen ");
+
+        if (Is3DAccelerated())
+        {
+            if (mDDInterface->mIsD3D8Or9)
+            {
+                if (mDDInterface->mIsD3D9)
+                    graphicsInfo += _S("HW DX9");
+                else
+                    graphicsInfo += _S("HW DX8");
+            }
+            else
+            {
+                graphicsInfo += _S("HW DX7");
+            }
+        }
+        else
+        {
+            graphicsInfo += _S("SW");
+        }
+
+        lineList.emplace_back(graphicsInfo, Color(255, 255, 0, 255));
+
+        if (Is3DAccelerated())
+        {
+            SexyString infoString;
+
+            infoString = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_BackBuffer));
+            SexyString backBuf = StrFormat(_S("  BackBuffer: %s"), infoString.c_str());
+
+            infoString = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_DisplayMode));
+            SexyString dispMode = StrFormat(_S("  DisplayMode: %s"), infoString.c_str());
+
+            SexyString finalInfo = backBuf + dispMode;
+
+            lineList.emplace_back(finalInfo, Color(255, 255, 0, 255));
+
+            SexyString presentationRect = StrFormat(
+                _S("  PresentationRect: %d x %d"),
+                mDDInterface->mPresentationRect.mWidth,
+                mDDInterface->mPresentationRect.mHeight);
+
+            SexyString screenImageSize = StrFormat(
+                _S("  DrawSurface: %d x %d"),
+                mDDInterface->mScreenImage->GetWidth(),
+                mDDInterface->mScreenImage->GetHeight());
+
+            finalInfo = presentationRect + screenImageSize;
+
+            lineList.emplace_back(finalInfo, Color(255, 255, 0, 255));
+        }
+
+        SexyString adapterStr;
+        if (Is3DAccelerated())
+            adapterStr = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_Adapter));
+
+        if (adapterStr.empty())
+            adapterStr = _S("No Adapter Info Available");
+
+        lineList.emplace_back(adapterStr, Color(255, 128, 0, 255));
+
+        SexyString d3dVersion;
+        if (Is3DAccelerated())
+            d3dVersion = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_DrvProductVersion));
+
+        if (d3dVersion.empty())
+            d3dVersion = _S("No D3D Version Information Available");
+        else
+            d3dVersion = _S("D3D DLL Version: ") + d3dVersion;
+
+        lineList.emplace_back(d3dVersion, Color(255, 128, 0, 255));
+
+        SexyString osVersion = ToSexyString(GetOSVersionString());
+
+        lineList.emplace_back(osVersion, Color(255, 128, 255, 255));
+
+        std::vector<std::string> processorInfoStrings;
+        GetProcessorInfoStrings(processorInfoStrings);
+
+        for (int i = 0; i < processorInfoStrings.size(); i++)
+        {
+            SexyString procInfo = ToSexyString(processorInfoStrings[i]);
+
+            lineList.emplace_back(procInfo, Color(192, 192, 192, 255));
+        }
+
+        MEMORYSTATUS memStats;
+        GlobalMemoryStatus(&memStats);
+
+        SexyString memInfo = StrFormat(
+            _S("MemLoad %d%% Phys %d/%dMB Page %d/%dMB Virt %d/%dMB"),
+            memStats.dwMemoryLoad,
+            memStats.dwAvailPhys >> 20,
+            memStats.dwTotalPhys >> 20,
+            memStats.dwAvailPageFile >> 20,
+            memStats.dwTotalPageFile >> 20,
+            memStats.dwAvailVirtual >> 20,
+            memStats.dwTotalVirtual >> 20);
+
+        lineList.emplace_back(memInfo, Color(0, 255, 255, 255));
+
+        SexyString d3dMem;
+        if (Is3DAccelerated())
+            d3dMem = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_TextureMemory));
+
+        if (d3dMem.empty())
+            d3dMem = _S("No D3D Texture Memory Information Available");
+        else
+            d3dMem = _S("D3D Texture Memory: ") + d3dMem;
+
+        lineList.emplace_back(d3dMem, Color(0, 255, 128, 255));
+
+        if (Is3DAccelerated())
+        {
+            SexyString infoString = ToSexyString(mDDInterface->mRenderDevice3D->GetInfoString(RenderDevice3D::INFOSTRING_DrvResourceManager));
+
+            if (!infoString.empty())
+            {
+                infoString = _S("D3D Resources: ") + infoString;
+
+                lineList.emplace_back(infoString, Color(0, 255, 192, 255));
+            }
+        }
+
+        SexyString renderTargetInfo;
+
+        SharedRenderTarget::Pool* pool = GetSharedRenderTargetPool();
+        if (pool != nullptr)
+            renderTargetInfo = ToSexyString(pool->GetInfoString());
+
+        if (!renderTargetInfo.empty())
+        {
+            renderTargetInfo = _S("D3D RTPool: ") + renderTargetInfo;
+
+            lineList.emplace_back(renderTargetInfo, Color(0, 255, 192, 255));
+        }
+
+        int stringWidth = 0;
+
+        for (int i = 0; i < lineList.size(); i++)
+        {
+            InfoString& line = lineList[i];
+            int w = sTahomaFont.StringWidth(line.mString);
+            if (stringWidth <= w)
+                stringWidth = w;
+        }
+
+        constexpr int padding = 5;
+        int width = stringWidth + 10;
+        int height = 30 * (lineList.size() + 1);
+        int yPos = padding;
+        if (mShowCompatInfoMode == SHOWCOMPATINFOMODE_BOTTOM)
+            yPos = mHeight - height - padding;
+        Color c(0, 0, 0, 160);
+        graphics.SetColor(c);
+        graphics.FillRect(padding, yPos, width, height);
+
+        int lineY = yPos + 30;
+        for (int i = 0; i < lineList.size(); i++)
+        {
+            InfoString& line = lineList[i];
+
+            graphics.SetColor(line.mColor);
+            graphics.DrawString(line.mString, 10, lineY);
+
+            lineY += 30;
+        }
     }
 
     static DWORD aRetryTick = 0;

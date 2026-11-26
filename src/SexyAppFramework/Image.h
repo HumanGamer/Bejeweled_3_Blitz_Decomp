@@ -34,6 +34,14 @@ namespace Sexy
         int mNumCols;
         AnimInfo* mAnimInfo;
 
+    public:
+        Image();
+        Image(const Image& theImage);
+        virtual ~Image();
+
+        int GetWidth();
+        int GetHeight();
+
         // TODO: Implement
     };
 }

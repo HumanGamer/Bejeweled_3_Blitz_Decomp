@@ -437,6 +437,7 @@ namespace Sexy
         void SetCursor(int theCursorNum);
 
         void CleanSharedImages();
+        SharedRenderTarget::Pool* GetSharedRenderTargetPool();
 
         virtual void BeginPopup();
         virtual void EndPopup();

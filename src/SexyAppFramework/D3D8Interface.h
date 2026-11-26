@@ -19,6 +19,7 @@ namespace Sexy
 
         bool InitFromDDInterface(DDInterface *ddInterface, DDInterface::EResult *result, bool testOnly, bool *is3DRecommended) override;
 
+        std::string GetInfoString(EInfoString infoType) override;
         void GetBackBufferDimensions(ulong &width, ulong &height) override;
 
         IUnknown *CreateSurface(int width, int height, bool flush, bool forceARGB8) override;

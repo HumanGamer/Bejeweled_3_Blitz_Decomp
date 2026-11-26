@@ -19,12 +19,13 @@ namespace Sexy
 
         bool InitFromDDInterface(DDInterface *ddInterface, DDInterface::EResult *result, bool testOnly, bool *is3DRecommended) override;
 
+        std::string GetInfoString(EInfoString infoType) override;
         void GetBackBufferDimensions(ulong &width, ulong &height) override;
 
-        bool CanBltSurface(bool unknown) override;
 
         IUnknown *CreateSurface(int width, int height, bool flush, bool forceARGB8) override;
 
+        bool CanBltSurface(bool unknown) override;
         void BltSurface(IUnknown *surface, const Rect& src, const Rect& dst) override;
 
         void ClearColorBuffer(const Color &color) override;

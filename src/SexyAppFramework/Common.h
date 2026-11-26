@@ -136,4 +136,7 @@ namespace Sexy
     std::string GetFileDir(const std::string& thePath, bool withSlash = false);
 
     std::string RemoveTrailingSlash(const std::string& theDirectory);
+
+    std::string GetOSVersionString();
+    void GetProcessorInfoStrings(std::vector<std::string>& strings);
 }

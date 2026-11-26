@@ -591,3 +591,14 @@ std::string Sexy::RemoveTrailingSlash(const std::string& theDirectory)
 	else
 		return theDirectory;
 }
+
+std::string Sexy::GetOSVersionString()
+{
+	// TODO: Implement
+	return "";
+}
+
+void Sexy::GetProcessorInfoStrings(std::vector<std::string>& strings)
+{
+	// TODO: Implement
+}

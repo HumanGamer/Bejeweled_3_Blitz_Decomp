@@ -92,6 +92,12 @@ target_sources(${PROJECT_NAME} PRIVATE
     MemoryImage.h
     Image.cpp
     Image.h
+    Font.cpp
+    Font.h
+    SysFont.cpp
+    SysFont.h
+    Graphics.cpp
+    Graphics.h
     Insets.cpp
     Insets.h
     NativeDisplay.cpp

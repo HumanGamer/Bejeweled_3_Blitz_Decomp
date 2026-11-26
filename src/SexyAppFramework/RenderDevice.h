@@ -34,6 +34,16 @@ namespace Sexy
             CAPF_VolumeMaps = 0x40,
         };
 
+        enum EInfoString
+        {
+            INFOSTRING_Adapter = 0,
+            INFOSTRING_DrvProductVersion = 1,
+            INFOSTRING_DisplayMode = 2,
+            INFOSTRING_BackBuffer = 3,
+            INFOSTRING_TextureMemory = 4,
+            INFOSTRING_DrvResourceManager = 5,
+          };
+
         virtual ECapsFlags GetCapsFlags() = 0;
 
         virtual bool InitFromDDInterface(DDInterface* ddInterface, DDInterface::EResult* result, bool testOnly, bool* is3DRecommended) = 0;
@@ -41,6 +51,7 @@ namespace Sexy
         virtual bool Flush(ulong flags) = 0;
         virtual bool Present(const RECT* src, const RECT* dst) = 0;
 
+        virtual std::string GetInfoString(EInfoString infoType) = 0;
         virtual void GetBackBufferDimensions(ulong& width, ulong& height) = 0;
         virtual bool SceneBegun() = 0;
 

@@ -21,6 +21,9 @@ namespace Sexy
             };
 
             std::vector<Pool::Entry> mEntries;
+
+        public:
+            std::string GetInfoString();
         };
     };
 }
