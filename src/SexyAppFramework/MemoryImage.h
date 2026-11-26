@@ -87,6 +87,7 @@ namespace Sexy
     public:
         // TODO: Implement
 
+        virtual void BitsChanged();
         virtual void CommitBits();
 
     public:
@@ -96,6 +97,8 @@ namespace Sexy
         virtual ~MemoryImage();
 
         virtual ulong* GetBits();
+
+        virtual void FillRect(const Rect& theRect, const Color& theColor, int theDrawMode);
 
         virtual void SetImageMode(bool hasTrans, bool hasAlpha);
     };
