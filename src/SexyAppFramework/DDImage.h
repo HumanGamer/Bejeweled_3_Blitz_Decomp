@@ -16,6 +16,8 @@ namespace Sexy
 
     class DDImage : public MemoryImage
     {
+    protected:
+        void DeleteAllNonSurfaceData();
     public:
         DDInterface* mDDInterface;
         bool mSurfaceSet;
@@ -33,15 +35,24 @@ namespace Sexy
 
         // TODO: Implement
 
+	    IDXSurface* GetSurface();
+	    void BitsChanged() override;
         void CommitBits() override;
+
         ulong *GetBits() override;
 
+        void FillRect(const Rect &theRect, const Color &theColor, int theDrawMode) override;
+
         virtual void NormalFillRect(const Rect& theRect, const Color& theColor);
+	    virtual void AdditiveFillRect(const Rect& theRect, const Color& theColor);
 
     public:
         DDImage();
         DDImage(DDInterface* ddInterface);
         virtual ~DDImage();
+
+        virtual bool LockSurface();
+        virtual bool UnlockSurface();
 
         virtual void SetSurface(LPDIRECTDRAWSURFACE theSurface);
 
