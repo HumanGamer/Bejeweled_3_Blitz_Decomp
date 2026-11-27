@@ -154,6 +154,21 @@ void MemoryImage::Init()
     mApp->AddMemoryImage(this);
 }
 
+void MemoryImage::PurgeBits()
+{
+    // TODO: Implement
+}
+
+void MemoryImage::ReInit()
+{
+    // Fix any un-palletizing
+    if (mWantPal)
+        Palletize();
+
+    if (mPurgeBits)
+        PurgeBits();
+}
+
 void MemoryImage::BitsChanged()
 {
     mBitsChanged = true;
@@ -376,4 +391,10 @@ bool MemoryImage::BuildTriReps(bool force)
     bool normal = (!this->mHasAlpha && !this->mHasTrans) || this->BuildTriRep(&this->mNormalTriRep, false, force);
     bool additive = this->BuildTriRep(&this->mAdditiveTriRep, true, force);
     return normal && additive;
+}
+
+bool MemoryImage::Palletize()
+{
+    // TODO: Implement
+    return false;
 }

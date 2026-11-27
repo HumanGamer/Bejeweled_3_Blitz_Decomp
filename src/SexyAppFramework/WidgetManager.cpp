@@ -93,6 +93,12 @@ void WidgetManager::DoMouseUps()
     // TODO: Implement
 }
 
+bool WidgetManager::DrawScreen()
+{
+    // TODO: Implement
+    return false;
+}
+
 bool WidgetManager::UpdateFrame()
 {
     // TODO: Implement

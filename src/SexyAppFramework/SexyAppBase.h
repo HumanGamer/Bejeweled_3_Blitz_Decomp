@@ -112,6 +112,7 @@ namespace Sexy
 
     enum {
         FPS_ShowFPS,
+        FPS_ShowHistory,
         FPS_ShowCoords,
         Num_FPS_Types
     };

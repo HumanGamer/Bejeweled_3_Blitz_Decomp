@@ -86,6 +86,9 @@ namespace Sexy
 
     public:
         // TODO: Implement
+        virtual void PurgeBits();
+        // TODO: Implement
+	    virtual void ReInit();
 
         virtual void BitsChanged();
         virtual void CommitBits();
@@ -110,5 +113,7 @@ namespace Sexy
 
         virtual bool BuildTriRep(TriRep* rep, bool additive, bool force);
         virtual bool BuildTriReps(bool force);
+
+        virtual bool Palletize();
     };
 }

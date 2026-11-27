@@ -91,6 +91,7 @@ namespace Sexy
 
         void DoMouseUps();
 
+        bool DrawScreen();
         bool UpdateFrame();
         bool UpdateFrameF(float theFrac);
         void SetPopupCommandWidget(Widget* theList);

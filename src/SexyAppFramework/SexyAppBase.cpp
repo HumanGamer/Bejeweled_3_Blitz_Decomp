@@ -19,6 +19,7 @@
 #include "FModMusicInterface.h"
 #include "Graphics.h"
 #include "KeyCodes.h"
+#include "MTRand.h"
 #include "MusicInterface.h"
 #include "PerfTimer.h"
 #include "SEHCatcher.h"
@@ -2499,7 +2500,13 @@ void SexyAppBase::EnforceCursor()
 
 void SexyAppBase::ReInitImages()
 {
-    // TODO: Implement
+    MemoryImageSet::iterator anItr = mMemoryImageSet.begin();
+    while (anItr != mMemoryImageSet.end())
+    {
+        MemoryImage* aMemoryImage = *anItr;
+        aMemoryImage->ReInit();
+        ++anItr;
+    }
 }
 
 void SexyAppBase::DeleteNativeImageData()
@@ -2554,13 +2561,186 @@ void SexyAppBase::StartLoadingThread()
     }
 }
 
-bool SexyAppBase::DrawDirtyStuff()
+///////////////////////////// FPS Stuff
+static void CalculateFPS(bool showHistory)
 {
     // TODO: Implement
-    return false;
+}
+
+///////////////////////////// FPS Stuff to draw mouse coords
+static void FPSDrawCoords(int theX, int theY)
+{
+    // TODO: Implement
+}
+
+///////////////////////////// Demo TimeLeft Stuff
+static void CalculateDemoTimeLeft()
+{
+    // TODO: Implement
+}
+
+static void UpdateScreenSaverInfo(DWORD theTick)
+{
+    // TODO: Implement
 }
 
 bool gIsFailing = false;
+
+bool SexyAppBase::DrawDirtyStuff()
+{
+    SEXY_AUTO_PERF("SexyAppBase::DrawDirtyStuff");
+    MTAutoDisallowRand aDisallowRand;
+
+    if (gIsFailing) // just try to reinit
+    {
+        Redraw(nullptr);
+        mHasPendingDraw = false;
+        mLastDrawWasEmpty = true;
+        return false;
+    }
+
+    if (SexyPerf::IsPerfOn())
+        SexyPerf::ClearFrameInfo();
+
+    if (mShowFPS)
+    {
+        switch(mShowFPSMode)
+        {
+            case FPS_ShowFPS: CalculateFPS(false); break;
+            case FPS_ShowHistory: CalculateFPS(true); break;
+            case FPS_ShowCoords:
+                if (mWidgetManager!=NULL)
+                    FPSDrawCoords(mWidgetManager->mLastMouseX, mWidgetManager->mLastMouseY);
+                break;
+        }
+
+        if (mPlayingDemoBuffer)
+            CalculateDemoTimeLeft();
+    }
+
+    DWORD aStartTime = timeGetTime();
+
+    // Update user input and screen saver info
+    static DWORD aPeriodicTick = 0;
+    if (aStartTime-aPeriodicTick > 1000)
+    {
+        aPeriodicTick = aStartTime;
+        UpdateScreenSaverInfo(aStartTime);
+    }
+
+    if (gScreenSaverActive)
+    {
+        mHasPendingDraw = false;
+        mLastDrawWasEmpty = true;
+        return false;
+    }
+
+    PerfTimer timer;
+    if (mShowFPS && mShowFPSMode <= FPS_ShowHistory)
+        timer.Start();
+
+    mIsDrawing = true;
+    bool drewScreen = mWidgetManager->DrawScreen();
+    mIsDrawing = false;
+
+    if (mShowFPS && mShowFPSMode <= FPS_ShowHistory)
+    {
+        if (drewScreen)
+        {
+            if (mDDInterface->mRenderDevice3D != nullptr)
+                mDDInterface->mRenderDevice3D->Flush(1u); // TODO: Figure out flags
+
+            mVFPSDrawCount++;
+            mVFPSDrawTimes += timer.GetDuration();
+        }
+    }
+
+    if ((drewScreen || aStartTime - mLastDrawTick >= 1000 || mCustomCursorDirty) &&
+        (int) (aStartTime - mNextDrawTick) >= 0)
+    {
+        mLastDrawWasEmpty = false;
+
+        mDrawCount++;
+
+        DWORD aMidTime = timeGetTime();
+
+        mFPSCount++;
+        mFPSTime += aMidTime - aStartTime;
+
+        mDrawTime += aMidTime - aStartTime;
+
+        static SysFont sTahomaFont(this, "Tahoma", 12);
+
+        if (mShowFPS || SexyPerf::IsPerfOn() && SexyPerf::IsPerfRecording())
+        {
+            // TODO: Implement
+        }
+
+        if (mWaitForVSync && mIsPhysWindowed && mSoftVSyncWait)
+        {
+            DWORD aTick = timeGetTime();
+            if (aTick-mLastDrawTick < mDDInterface->mMillisecondsPerFrame)
+                Sleep(mDDInterface->mMillisecondsPerFrame - (aTick - mLastDrawTick));
+        }
+
+        DWORD aPreScreenBltTime = timeGetTime();
+        mLastDrawTick = aPreScreenBltTime;
+
+        Redraw(nullptr);
+
+        // This is our one UpdateFTimeAcc if we are vsynched
+        UpdateFTimeAcc();
+
+        DWORD aEndTime = timeGetTime();
+
+        mScreenBltTime = aEndTime - aPreScreenBltTime;
+
+#ifdef _DEBUG
+        /*if (mFPSTime >= 5000) // Show FPS about every 5 seconds
+        {
+            ulong aTickNow = GetTickCount();
+
+            OutputDebugString(StrFormat(_S("Theoretical FPS: %d\r\n"), (int) (mFPSCount * 1000 / mFPSTime)).c_str());
+            OutputDebugString(StrFormat(_S("Actual      FPS: %d\r\n"), (mFPSFlipCount * 1000) / max((aTickNow - mFPSStartTick), 1)).c_str());
+            OutputDebugString(StrFormat(_S("Dirty Rate     : %d\r\n"), (mFPSDirtyCount * 1000) / max((aTickNow - mFPSStartTick), 1)).c_str());
+
+            mFPSTime = 0;
+            mFPSCount = 0;
+            mFPSFlipCount = 0;
+            mFPSStartTick = aTickNow;
+            mFPSDirtyCount = 0;
+        }*/
+#endif
+
+
+        if (mLoadingThreadStarted && !mLoadingThreadCompleted)
+        {
+            int aTotalTime = aEndTime - aStartTime;
+
+            mNextDrawTick += 35 + max(aTotalTime, 15);
+
+            if ((int) (aEndTime - mNextDrawTick) >= 0)
+                mNextDrawTick = aEndTime;
+
+            /*char aStr[256];
+            sprintf(aStr, "Next Draw Time: %d\r\n", mNextDrawTick);
+            OutputDebugString(aStr);*/
+        }
+        else
+            mNextDrawTick = aEndTime;
+
+        mHasPendingDraw = false;
+        mCustomCursorDirty = false;
+
+        return true;
+    }
+    else
+    {
+        mHasPendingDraw = false;
+        mLastDrawWasEmpty = true;
+        return false;
+    }
+}
 
 void SexyAppBase::Redraw(Rect *theClipRect)
 {
