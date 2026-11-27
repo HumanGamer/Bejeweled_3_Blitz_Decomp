@@ -1107,7 +1107,7 @@ LABEL_83:
 
     mInRedraw = false;
 
-    return GotDXError(aResult, "Redraw Windowed");
+    return !GotDXError(aResult, "Redraw Windowed");
 }
 
 bool DDInterface::SetCursorImage(Image *theImage)
