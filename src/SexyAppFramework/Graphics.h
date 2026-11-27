@@ -1,11 +1,12 @@
 #pragma once
 
+#include "Color.h"
 #include "Common.h"
 #include "Rect.h"
-#include "RenderDevice.h"
 
 namespace Sexy
 {
+    class RenderDevice3D;
     class Color;
     class Image;
     class RenderDevice;
@@ -23,6 +24,7 @@ namespace Sexy
         double b;
     };
 
+    class Graphics3D;
     class Graphics;
 
     struct HRenderContext
@@ -37,6 +39,7 @@ namespace Sexy
     class GraphicsState
     {
     public:
+        static Image mStaticImage;
         Image* mDestImage;
         float mTransX;
         float mTransY;
@@ -62,17 +65,6 @@ namespace Sexy
         // TODO: Implement
     };
 
-    class Graphics3D
-    {
-    public:
-        Graphics* mGraphics;
-        RenderDevice3D* mRenderDevice;
-        HRenderContext mRenderContext;
-
-    public:
-        // TODO: Implement
-    };
-
     typedef std::list<GraphicsState> GraphicsStateList;
 
     class Graphics : public GraphicsState
@@ -92,6 +84,11 @@ namespace Sexy
         GraphicsStateList mStateStack;
 
     protected:
+        void InitRenderInfo(const Graphics* theGraphics);
+
+        void CalcFinalColor();
+
+        void SetAsCurrentContext();
         // TODO: Implement
 
     public:
@@ -115,6 +112,19 @@ namespace Sexy
         // TODO: Implement
 
         void DrawString(const SexyString& theString, int theX, int theY);
+
+        // TODO: Implement
+    };
+
+    class Graphics3D
+    {
+    public:
+        Graphics* mGraphics;
+        RenderDevice3D* mRenderDevice;
+        HRenderContext mRenderContext;
+
+    public:
+        Graphics3D(Graphics* theGraphics, RenderDevice3D* theRenderDevice, const HRenderContext& theContext);
 
         // TODO: Implement
     };

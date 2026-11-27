@@ -4,6 +4,7 @@
 
 namespace Sexy
 {
+    class MemoryImage;
     struct AnimInfo;
 
     enum ImageFlags
@@ -41,6 +42,8 @@ namespace Sexy
 
         int GetWidth();
         int GetHeight();
+
+        virtual MemoryImage* AsMemoryImage() { return nullptr; }
 
         // TODO: Implement
     };

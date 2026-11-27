@@ -96,10 +96,19 @@ namespace Sexy
         MemoryImage(const MemoryImage& theMemoryImage);
         virtual ~MemoryImage();
 
+        MemoryImage *AsMemoryImage() override;
+
+        HRenderContext CreateContext(Image *theImage, const HRenderContext &theContext) override;
+        void DeleteContext(const HRenderContext &context) override;
+        void SetCurrentContext(const HRenderContext &context) override;
+
+        void FillRect(const Rect& theRect, const Color& theColor, int theDrawMode) override;
+
         virtual ulong* GetBits();
 
-        virtual void FillRect(const Rect& theRect, const Color& theColor, int theDrawMode);
-
         virtual void SetImageMode(bool hasTrans, bool hasAlpha);
+
+        virtual bool BuildTriRep(TriRep* rep, bool additive, bool force);
+        virtual bool BuildTriReps(bool force);
     };
 }

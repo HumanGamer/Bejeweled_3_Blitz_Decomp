@@ -3,9 +3,11 @@
 #include "Color.h"
 #include "Common.h"
 #include "DDInterface.h"
+#include "Graphics.h"
 
 namespace Sexy
 {
+    struct HRenderContext;
     class DDInterface;
 
     class RenderDevice
@@ -17,6 +19,15 @@ namespace Sexy
             int mX;
             int mWidth;
         };
+
+    public:
+        // TODO: Implement
+
+        virtual HRenderContext CreateContext(Image* theImage, const HRenderContext& theContext) = 0;
+        virtual void DeleteContext(const HRenderContext& context) = 0;
+        virtual void SetCurrentContext(const HRenderContext& context) = 0;
+
+        virtual void FillRect(const Rect& theRect, const Color& theColor, int theDrawMode) = 0;
 
         // TODO: Implement
     };
@@ -64,5 +75,17 @@ namespace Sexy
         virtual bool SetRenderTargetSurface(IUnknown* surface) = 0;
 
         virtual void ClearColorBuffer(const Color& color) = 0;
+
+        virtual bool RecoverImageBitsFromRenderData(MemoryImage* theImage) = 0;
+    };
+
+    class NullRenderDevice : public RenderDevice
+    {
+    public:
+        HRenderContext CreateContext(Image *theImage, const HRenderContext &theContext) override { return {0}; }
+        void DeleteContext(const HRenderContext &context) override {}
+        void SetCurrentContext(const HRenderContext &context) override {}
+
+        void FillRect(const Rect &theRect, const Color &theColor, int theDrawMode) override {}
     };
 }
